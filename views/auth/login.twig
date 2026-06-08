@@ -1,0 +1,28 @@
+{% extends 'layouts/base.twig' %}
+
+{% block content %}
+  <section class="form-card">
+    <h1>Connexion gérant</h1>
+
+    {% if errors.global %}<div class="flash flash-error">{{ errors.global }}</div>{% endif %}
+
+    <form action="/login" method="post" novalidate>
+      <div class="form-group">
+        <label for="siret">SIRET</label>
+        <input type="text" id="siret" name="siret"
+               value="{{ values.siret|default('') }}" required>
+        {% if errors.siret %}<p class="field-error">{{ errors.siret }}</p>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label for="password">Mot de passe</label>
+        <input type="password" id="password" name="password" required>
+        {% if errors.password %}<p class="field-error">{{ errors.password }}</p>{% endif %}
+      </div>
+
+      <button type="submit" class="btn btn-primary">Se connecter</button>
+    </form>
+
+    <p class="form-footer">Pas encore de compte ? <a href="/register">Inscrire mon auto-école</a></p>
+  </section>
+{% endblock %}

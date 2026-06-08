@@ -1,0 +1,21 @@
+{% extends 'layouts/base.twig' %}
+
+{% block content %}
+  <section class="form-card">
+    <h1>Nouvel ordinateur</h1>
+
+    <form action="/computers" method="post" novalidate>
+      <div class="form-group">
+        <label for="macAddress">Adresse MAC</label>
+        <input type="text" id="macAddress" name="macAddress"
+               value="{{ values.macAddress|default('') }}"
+               placeholder="AA:BB:CC:DD:EE:FF" required>
+        {% if errors.macAddress %}<p class="field-error">{{ errors.macAddress }}</p>{% endif %}
+      </div>
+
+      <button type="submit" class="btn btn-primary">Créer</button>
+    </form>
+
+    <p class="form-footer"><a href="/computers">Retour à la liste</a></p>
+  </section>
+{% endblock %}

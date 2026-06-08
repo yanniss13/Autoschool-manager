@@ -1,0 +1,14 @@
+{% extends 'layouts/base.twig' %}
+
+{% block content %}
+  <section class="form-card">
+    <h1>Nouvel employé</h1>
+
+    <form action="/employees" method="post" novalidate>
+      {% include 'employees/_fields.twig' with { isEdit: false } %}
+      <button type="submit" class="btn btn-primary">Créer</button>
+    </form>
+
+    <p class="form-footer"><a href="/employees">Retour à la liste</a></p>
+  </section>
+{% endblock %}

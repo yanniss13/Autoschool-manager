@@ -1,0 +1,17 @@
+# Dependencies
+node_modules/
+
+# Environment (jamais versionne)
+.env
+
+# Base SQLite locale (recreee via `npm run prisma:migrate`)
+prisma/dev.db
+prisma/dev.db-journal
+prisma/dev.db-wal
+prisma/dev.db-shm
+
+# Logs
+*.log
+
+# Fichiers locaux Claude Code
+.claude/

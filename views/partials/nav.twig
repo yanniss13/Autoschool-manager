@@ -1,0 +1,16 @@
+<header class="navbar">
+  <a class="navbar-brand" href="/">AutoSchool Manager</a>
+  <nav class="navbar-links">
+    {% if currentCompany %}
+      <a href="/dashboard">Tableau de bord</a>
+      <a href="/employees">Employés</a>
+      <a href="/computers">Ordinateurs</a>
+      <form action="/logout" method="post" class="inline-form">
+        <button type="submit" class="link-button">Déconnexion</button>
+      </form>
+    {% else %}
+      <a href="/login">Connexion</a>
+      <a href="/register">Inscription</a>
+    {% endif %}
+  </nav>
+</header>

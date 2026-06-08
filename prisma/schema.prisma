@@ -1,0 +1,62 @@
+// Schema de donnees AutoSchool Manager
+// Genere le client Prisma utilise dans src/config/prisma.js
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id           Int      @id @default(autoincrement())
+  businessName String
+  siret        String   @unique
+  directorName String?
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  employees Employee[]
+  computers Computer[]
+}
+
+model Employee {
+  id           Int     @id @default(autoincrement())
+  firstName    String
+  lastName     String
+  email        String
+  passwordHash String
+  age          Int?
+  gender       String?
+
+  companyId Int
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  // Cote "un" de la relation 1-1 : la cle etrangere est portee par Computer.
+  computer Computer?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Email unique au sein d'une meme entreprise (pas globalement).
+  @@unique([companyId, email])
+}
+
+model Computer {
+  id         Int    @id @default(autoincrement())
+  macAddress String @unique
+
+  companyId Int
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  // Relation 1-1 optionnelle : un poste a zero ou un employe.
+  // Le @unique garantit au niveau base qu'un employe n'occupe qu'un seul poste.
+  employeeId Int?      @unique
+  employee   Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

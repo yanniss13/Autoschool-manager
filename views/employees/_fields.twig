@@ -1,0 +1,45 @@
+{# Champs partages entre les formulaires de creation et d'edition.
+   Variable attendue : isEdit (booleen). #}
+<div class="form-group">
+  <label for="lastName">Nom</label>
+  <input type="text" id="lastName" name="lastName" value="{{ values.lastName|default('') }}" required>
+  {% if errors.lastName %}<p class="field-error">{{ errors.lastName }}</p>{% endif %}
+</div>
+
+<div class="form-group">
+  <label for="firstName">Prénom</label>
+  <input type="text" id="firstName" name="firstName" value="{{ values.firstName|default('') }}" required>
+  {% if errors.firstName %}<p class="field-error">{{ errors.firstName }}</p>{% endif %}
+</div>
+
+<div class="form-group">
+  <label for="email">Email</label>
+  <input type="email" id="email" name="email" value="{{ values.email|default('') }}" required>
+  {% if errors.email %}<p class="field-error">{{ errors.email }}</p>{% endif %}
+</div>
+
+<div class="form-group">
+  <label for="password">
+    Mot de passe
+    {% if isEdit %}<span class="muted">(laisser vide pour ne pas changer)</span>{% endif %}
+  </label>
+  <input type="password" id="password" name="password" {% if not isEdit %}required{% endif %}>
+  {% if errors.password %}<p class="field-error">{{ errors.password }}</p>{% endif %}
+</div>
+
+<div class="form-group">
+  <label for="age">Âge <span class="muted">(optionnel)</span></label>
+  <input type="number" id="age" name="age" min="1" value="{{ values.age|default('') }}">
+  {% if errors.age %}<p class="field-error">{{ errors.age }}</p>{% endif %}
+</div>
+
+<div class="form-group">
+  <label for="gender">Genre <span class="muted">(optionnel)</span></label>
+  <select id="gender" name="gender">
+    <option value="">—</option>
+    {% for g in genders %}
+      <option value="{{ g }}" {% if values.gender == g %}selected{% endif %}>{{ g|capitalize }}</option>
+    {% endfor %}
+  </select>
+  {% if errors.gender %}<p class="field-error">{{ errors.gender }}</p>{% endif %}
+</div>
