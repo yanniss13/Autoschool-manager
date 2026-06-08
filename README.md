@@ -138,6 +138,30 @@ npm run prisma:generate
 npm run prisma:studio
 ```
 
+## Tests
+
+Un test de bout en bout rejoue automatiquement tout le parcours du MVP et
+affiche un ✅ / ❌ par étape :
+
+```bash
+npm test
+```
+
+Il démarre un serveur dédié (port 3100, sans gêner `npm run dev`), effectue de
+vraies requêtes HTTP, vérifie certaines données en base via Prisma, puis
+**supprime ses propres données de test** (la base reste propre).
+
+Couverture (37 vérifications) :
+- authentification & session (inscription, connexion, protection, déconnexion) ;
+- CRUD employés (validation, unicité de l'email, hachage du mot de passe) ;
+- CRUD ordinateurs (normalisation et unicité de l'adresse MAC) ;
+- affectation / désaffectation et règle « un seul poste par employé » ;
+- cloisonnement multi-entreprises (accès cross-tenant → 404) ;
+- compteurs du dashboard et pages d'erreur 404 / 500.
+
+> Prérequis : avoir lancé l'installation et la migration au moins une fois
+> (`npm install` puis `npm run prisma:migrate`).
+
 ## Scénario de démonstration (2–3 minutes)
 
 1. **Inscription** : ouvrir `/register`, créer une auto-école
