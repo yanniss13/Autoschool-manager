@@ -1,23 +1,23 @@
 # AutoSchool Manager
 
-Application web interne de gestion du **personnel** et du **parc informatique
-administratif** d'une auto-école.
+Application web interne de gestion du **personnel** et des **véhicules**
+d'une auto-école.
 
 ## Résumé fonctionnel
 
 Une auto-école crée un compte (entreprise). Son **gérant** se connecte avec son
 SIRET et son mot de passe, puis accède à un **tableau de bord protégé** depuis
 lequel il administre **ses employés** (moniteurs, secrétaires, assistants
-administratifs) et **ses postes informatiques** (poste d'accueil, secrétariat,
-direction). Le gérant peut **affecter un employé à un poste**, à condition que
-cet employé n'occupe pas déjà un autre poste.
+administratifs) et **ses véhicules** (voitures d'auto-école). Le gérant peut
+**affecter un véhicule à un employé référent**, à condition que cet employé ne
+soit pas déjà référent d'un autre véhicule.
 
 Chaque auto-école est **totalement cloisonnée** : un gérant ne voit jamais les
 données d'une autre entreprise.
 
-> Périmètre volontairement étroit : c'est un outil **RH + parc informatique**,
-> **pas** un logiciel métier complet d'auto-école (ni élèves, ni leçons, ni
-> véhicules).
+> Périmètre volontairement ciblé : c'est un outil de **gestion du personnel et
+> des véhicules**, pas un logiciel métier complet d'auto-école (ni élèves, ni
+> leçons, ni planning d'examens).
 
 ## Stack technique
 
@@ -38,10 +38,10 @@ données d'une autre entreprise.
 - [x] Connexion du gérant (SIRET + mot de passe) et déconnexion
 - [x] Dashboard protégé par session
 - [x] CRUD complet des employés
-- [x] CRUD complet des ordinateurs
-- [x] Affectation d'un employé à un ordinateur **uniquement s'il n'a pas déjà de poste**
-- [x] Désaffectation d'un poste
-- [x] Compteurs du dashboard (employés, ordinateurs, postes affectés / disponibles)
+- [x] CRUD complet des véhicules
+- [x] Affectation d'un véhicule à un employé **uniquement s'il n'est pas déjà référent d'un autre véhicule**
+- [x] Désaffectation d'un véhicule
+- [x] Compteurs du dashboard (employés, véhicules, véhicules affectés / disponibles)
 - [x] CSS propre et homogène sur toutes les pages
 
 ## Choix techniques importants
@@ -51,10 +51,10 @@ données d'une autre entreprise.
 - **Cloisonnement multi-tenant** : toutes les requêtes Prisma sont filtrées par
   le `companyId` **issu de la session** (jamais d'un paramètre client). Toute
   ressource d'une autre entreprise renvoie **404**, sans fuite d'information.
-- **Règle métier centrale au niveau base** : la clé étrangère `employeeId` est
-  portée par `Computer` et marquée `@unique` → un employé ne peut pas occuper
-  deux postes, garanti par la base elle-même, pas seulement par le code.
-- **Affectation transactionnelle** : la vérification (poste libre + employé
+- **Règle métier au niveau base** : la clé étrangère `employeeId` est portée par
+  `Vehicle` et marquée `@unique` → un employé ne peut pas être référent de deux
+  véhicules, garanti par la base elle-même, pas seulement par le code.
+- **Affectation transactionnelle** : la vérification (véhicule libre + employé
   disponible + même entreprise) et l'écriture sont exécutées dans une
   **transaction Prisma** (tout réussit ensemble ou rien).
 - **Sécurité** : mots de passe hachés avec bcrypt, jamais stockés ni affichés en
@@ -68,7 +68,7 @@ données d'une autre entreprise.
 ```
 ProjetRH/
 ├── prisma/
-│   ├── schema.prisma          # Modèle Company / Employee / Computer
+│   ├── schema.prisma          # Modèle Company / Employee / Vehicle
 │   ├── migrations/            # Migrations versionnées
 │   └── dev.db                 # Base SQLite (générée)
 ├── src/
@@ -76,13 +76,14 @@ ProjetRH/
 │   ├── server.js              # Point d'entrée HTTP
 │   ├── config/prisma.js       # Client Prisma (singleton)
 │   ├── middlewares/           # requireAuth, loadCompany, redirectIfAuth, flash
-│   ├── controllers/           # auth, dashboard, employee, computer
+│   ├── controllers/           # auth, dashboard, employee, vehicle
 │   ├── services/              # accès données (scopés par companyId)
 │   ├── validators/            # validation serveur
 │   ├── routes/                # routeurs + agrégation
 │   └── utils/password.js      # hash / compare bcrypt
 ├── views/                     # templates Twig (layout, partials, pages)
 ├── public/css/style.css       # feuille de style unique
+├── test/smoke.cjs             # test de bout en bout (npm test)
 ├── .env.example
 └── README.md
 ```
@@ -151,11 +152,11 @@ Il démarre un serveur dédié (port 3100, sans gêner `npm run dev`), effectue 
 vraies requêtes HTTP, vérifie certaines données en base via Prisma, puis
 **supprime ses propres données de test** (la base reste propre).
 
-Couverture (37 vérifications) :
+Couverture (38 vérifications) :
 - authentification & session (inscription, connexion, protection, déconnexion) ;
 - CRUD employés (validation, unicité de l'email, hachage du mot de passe) ;
-- CRUD ordinateurs (normalisation et unicité de l'adresse MAC) ;
-- affectation / désaffectation et règle « un seul poste par employé » ;
+- CRUD véhicules (normalisation et unicité de l'immatriculation) ;
+- affectation / désaffectation et règle « un seul véhicule par employé » ;
 - cloisonnement multi-entreprises (accès cross-tenant → 404) ;
 - compteurs du dashboard et pages d'erreur 404 / 500.
 
@@ -172,33 +173,32 @@ Couverture (37 vérifications) :
 3. **Employés** : aller dans **Employés**, créer deux employés (ex. un moniteur
    et une secrétaire). Montrer une erreur de validation (email déjà utilisé)
    puis corriger.
-4. **Ordinateurs** : aller dans **Ordinateurs**, créer deux postes
-   (ex. `AA:BB:CC:DD:EE:01` et `AA:BB:CC:DD:EE:02`). Montrer que la saisie
-   `aa-bb-cc-dd-ee-01` est **normalisée** automatiquement.
-5. **Affectation** : affecter un employé à un poste. Le poste passe au statut
-   **Affecté** ; l'employé disparaît de la liste des employés affectables.
-6. **Règle métier** : tenter d'affecter le **même employé** à l'autre poste →
+4. **Véhicules** : aller dans **Véhicules**, créer deux véhicules
+   (ex. immatriculation `AB-123-CD`, marque Renault, modèle Clio). Montrer que la
+   saisie `ab123cd` est **normalisée** automatiquement en `AB-123-CD`.
+5. **Affectation** : affecter un véhicule à un employé. Le véhicule passe au
+   statut **Affecté** ; l'employé disparaît de la liste des employés affectables.
+6. **Règle métier** : tenter d'affecter le **même employé** à l'autre véhicule →
    refus avec message clair.
 7. **Dashboard** : revenir au tableau de bord → les compteurs reflètent l'état
-   (employés, ordinateurs, postes affectés / disponibles).
+   (employés, véhicules, véhicules affectés / disponibles).
 8. **Cloisonnement** (optionnel) : ouvrir une seconde session (autre auto-école)
    et montrer qu'elle ne voit aucune donnée de la première.
 
 ## Notes pour la présentation orale (jury)
 
 - **Pourquoi le thème auto-école ?** C'est un cas concret et parlant : une petite
-  structure avec quelques employés (moniteurs, secrétaires) et quelques postes
-  informatiques administratifs à suivre. Le périmètre est assez riche pour
-  illustrer un vrai CRUD et une relation métier, sans se disperser dans un
-  logiciel de gestion d'élèves.
+  structure avec quelques employés (moniteurs, secrétaires) et une flotte de
+  véhicules à suivre. Le périmètre est assez riche pour illustrer un vrai CRUD et
+  une relation métier, sans se disperser dans un logiciel de gestion d'élèves.
 - **Cloisonnement par entreprise.** Chaque auto-école ne voit que ses propres
   données. Techniquement, l'identifiant de l'entreprise vient **de la session**,
   jamais du formulaire ; chaque requête est filtrée par cet identifiant, et toute
   tentative d'accès à une ressource d'une autre entreprise renvoie **404**.
-- **La règle métier centrale.** « Un employé ne peut avoir qu'un seul poste, et un
-  poste ne peut avoir qu'un seul employé. » C'est une relation **1-1 optionnelle**,
-  garantie par une contrainte d'unicité dans la base, et vérifiée dans une
-  transaction au moment de l'affectation.
+- **La règle métier centrale.** « Un employé ne peut être référent que d'un seul
+  véhicule, et un véhicule n'a qu'un seul employé référent. » C'est une relation
+  **1-1 optionnelle**, garantie par une contrainte d'unicité dans la base, et
+  vérifiée dans une transaction au moment de l'affectation.
 - **Pourquoi SQLite pour le MVP ?** Zéro installation de serveur de base de
   données, fichier unique versionnable, parfait pour développer et démontrer
   rapidement. Grâce à Prisma, passer plus tard à PostgreSQL ne demanderait qu'un
@@ -215,7 +215,7 @@ Couverture (37 vérifications) :
 ## Bonus V2 non réalisés (hors périmètre)
 
 - Connexion **employé** (email + mot de passe) et page profil personnelle.
-- Affichage de l'adresse MAC du poste associé à l'employé.
+- Affichage du véhicule dont l'employé est référent sur sa page profil.
 - **Upload / modification d'avatar**.
-- **Déclaration de panne** d'un ordinateur (`isBroken`, `brokenAt`).
-- **Pastille rouge + heure de panne** sur le dashboard du gérant.
+- Statut **« en maintenance »** d'un véhicule (immobilisé) avec indicateur visuel
+  sur le dashboard du gérant.

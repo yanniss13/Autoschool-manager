@@ -27,7 +27,7 @@ const ROOT = path.join(__dirname, '..');
 const PORT = 3100;
 const BASE = `http://localhost:${PORT}`;
 
-// Donnees uniques par execution (evite tout conflit d'unicite SIRET / MAC).
+// Donnees uniques par execution (evite tout conflit d'unicite SIRET / immatriculation).
 const stamp = Date.now();
 const siretA = String(stamp).padStart(14, '0').slice(-14);
 const siretB = String(stamp + 1).padStart(14, '0').slice(-14);
@@ -65,13 +65,17 @@ function makeClient() {
   };
 }
 
-function macFrom(n) {
-  const hex = n.toString(16).toUpperCase().padStart(12, '0').slice(-12);
-  return hex.match(/.{2}/g).join(':');
+// Immatriculation valide et unique par execution (format SIV AB-123-CD).
+function plateFrom(n) {
+  const L = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const two = (x) => L[Math.abs(x) % 26] + L[Math.floor(Math.abs(x) / 26) % 26];
+  const digits = String(Math.abs(n) % 1000).padStart(3, '0');
+  return `${two(n)}-${digits}-${two(Math.floor(n / 100))}`;
 }
 
+// Lit la valeur d'un compteur du dashboard a partir de son libelle exact.
 function statValue(html, label) {
-  const m = html.match(new RegExp('stat-value">(\\d+)</span>\\s*<span class="stat-label">' + label));
+  const m = html.match(new RegExp('stat-value">(\\d+)</span>\\s*<span class="stat-label">' + label + '</span>'));
   return m ? Number(m[1]) : null;
 }
 
@@ -154,30 +158,43 @@ async function runTests() {
   e1b = await prisma.employee.findUnique({ where: { id: e1.id } });
   check('Edition avec nouveau mot de passe : hash change', e1b.passwordHash !== hashBefore, 'hash non change');
 
-  section('CRUD ORDINATEURS');
-  const mac1 = macFrom(stamp + 100);
-  const mac2 = macFrom(stamp + 101);
-  r = await a('/computers', { method: 'POST', body: { macAddress: mac1.toLowerCase().replace(/:/g, '-') } });
-  check('Creation ordinateur (MAC minuscule/tirets acceptee)', r.status === 302, `status=${r.status}`);
-  let c1 = await prisma.computer.findFirst({ where: { companyId: companyA.id, macAddress: mac1 } });
-  check('Adresse MAC normalisee en base (AA:BB:...)', !!c1, 'mac non normalisee');
-  r = await a('/computers', { method: 'POST', body: { macAddress: 'zzz' } });
-  check('Creation refusee si MAC invalide', r.status === 400 && /valide/i.test(r.text), `status=${r.status}`);
-  r = await a('/computers', { method: 'POST', body: { macAddress: mac1.replace(/:/g, '').toLowerCase() } });
-  check('Creation refusee si MAC deja utilisee', r.status === 400 && /déjà utilisée/i.test(r.text), `status=${r.status}`);
-  await a('/computers', { method: 'POST', body: { macAddress: mac2 } });
-  let c2 = await prisma.computer.findFirst({ where: { companyId: companyA.id, macAddress: mac2 } });
+  section('CRUD VÉHICULES');
+  const plate1 = plateFrom(stamp + 100);
+  const plate2 = plateFrom(stamp + 101);
+  r = await a('/vehicles', { method: 'POST', body: { registrationNumber: plate1.toLowerCase().replace(/-/g, ''), brand: 'Renault', model: 'Clio', year: '2020', transmission: 'manual' } });
+  check('Creation vehicule (immat. minuscule/compacte acceptee)', r.status === 302, `status=${r.status}`);
+  let v1 = await prisma.vehicle.findFirst({ where: { companyId: companyA.id, registrationNumber: plate1 } });
+  check('Immatriculation normalisee (AB-123-CD)', !!v1, 'immat non normalisee');
+  r = await a('/vehicles', { method: 'POST', body: { registrationNumber: 'xx', brand: 'X', model: 'Y' } });
+  check('Creation refusee si immatriculation invalide', r.status === 400 && /valide/i.test(r.text), `status=${r.status}`);
+  r = await a('/vehicles', { method: 'POST', body: { registrationNumber: plate1.replace(/-/g, '').toLowerCase(), brand: 'X', model: 'Y' } });
+  check('Creation refusee si immatriculation deja utilisee', r.status === 400 && /déjà utilisée/i.test(r.text), `status=${r.status}`);
+  await a('/vehicles', { method: 'POST', body: { registrationNumber: plate2, brand: 'Peugeot', model: '208' } });
+  let v2 = await prisma.vehicle.findFirst({ where: { companyId: companyA.id, registrationNumber: plate2 } });
 
-  section('AFFECTATION EMPLOYÉ <-> ORDINATEUR');
-  await a(`/computers/${c1.id}/assign`, { method: 'POST', body: { employeeId: String(e1.id) } });
-  c1 = await prisma.computer.findUnique({ where: { id: c1.id } });
-  check('Affectation d\'un employe disponible', c1.employeeId === e1.id, `employeeId=${c1.employeeId}`);
-  await a(`/computers/${c2.id}/assign`, { method: 'POST', body: { employeeId: String(e1.id) } });
-  c2 = await prisma.computer.findUnique({ where: { id: c2.id } });
-  check('Employe deja affecte non reaffectable ailleurs', c2.employeeId === null, `employeeId=${c2.employeeId}`);
-  await a(`/computers/${c1.id}/unassign`, { method: 'POST' });
-  c1 = await prisma.computer.findUnique({ where: { id: c1.id } });
-  check('Desaffectation (employeeId remis a null)', c1.employeeId === null, `employeeId=${c1.employeeId}`);
+  // Rendu des vues vehicules (liste, formulaires)
+  r = await a('/vehicles');
+  check('Liste vehicules connecte -> 200', r.status === 200 && r.text.includes(plate1), `status=${r.status}`);
+  r = await a('/vehicles/new');
+  check('Formulaire nouveau vehicule -> 200', r.status === 200 && /Immatriculation/.test(r.text), `status=${r.status}`);
+  r = await a(`/vehicles/${v1.id}/edit`);
+  check('Formulaire edition vehicule -> 200', r.status === 200 && /Modifier un véhicule/.test(r.text), `status=${r.status}`);
+
+  // Edition valide
+  await a(`/vehicles/${v1.id}/update`, { method: 'POST', body: { registrationNumber: plate1, brand: 'Renault', model: 'Clio 5', year: '2021', transmission: 'automatic' } });
+  v1 = await prisma.vehicle.findUnique({ where: { id: v1.id } });
+  check('Edition vehicule valide', v1.model === 'Clio 5' && v1.transmission === 'automatic', `model=${v1.model}`);
+
+  section('AFFECTATION EMPLOYÉ <-> VÉHICULE');
+  await a(`/vehicles/${v1.id}/assign`, { method: 'POST', body: { employeeId: String(e1.id) } });
+  v1 = await prisma.vehicle.findUnique({ where: { id: v1.id } });
+  check('Affectation d\'un employe disponible', v1.employeeId === e1.id, `employeeId=${v1.employeeId}`);
+  await a(`/vehicles/${v2.id}/assign`, { method: 'POST', body: { employeeId: String(e1.id) } });
+  v2 = await prisma.vehicle.findUnique({ where: { id: v2.id } });
+  check('Employe deja affecte non reaffectable ailleurs', v2.employeeId === null, `employeeId=${v2.employeeId}`);
+  await a(`/vehicles/${v1.id}/unassign`, { method: 'POST' });
+  v1 = await prisma.vehicle.findUnique({ where: { id: v1.id } });
+  check('Desaffectation (employeeId remis a null)', v1.employeeId === null, `employeeId=${v1.employeeId}`);
 
   section('CLOISONNEMENT MULTI-ENTREPRISES');
   const b = makeClient();
@@ -188,27 +205,27 @@ async function runTests() {
   check('Entreprise B ne peut pas editer un employe de A (404)', r.status === 404, `status=${r.status}`);
   r = await b(`/employees/${e1.id}/delete`, { method: 'POST' });
   check('Entreprise B ne peut pas supprimer un employe de A (404)', r.status === 404, `status=${r.status}`);
-  r = await b(`/computers/${c1.id}/edit`);
-  check('Entreprise B ne peut pas editer un ordinateur de A (404)', r.status === 404, `status=${r.status}`);
-  r = await b(`/computers/${c1.id}/assign`, { method: 'POST', body: { employeeId: String(eb.id) } });
-  check('Entreprise B ne peut pas affecter un ordinateur de A (404)', r.status === 404, `status=${r.status}`);
+  r = await b(`/vehicles/${v1.id}/edit`);
+  check('Entreprise B ne peut pas editer un vehicule de A (404)', r.status === 404, `status=${r.status}`);
+  r = await b(`/vehicles/${v1.id}/assign`, { method: 'POST', body: { employeeId: String(eb.id) } });
+  check('Entreprise B ne peut pas affecter un vehicule de A (404)', r.status === 404, `status=${r.status}`);
 
   section('SUPPRESSIONS');
-  await a(`/computers/${c1.id}/assign`, { method: 'POST', body: { employeeId: String(e1.id) } });
-  await a(`/computers/${c1.id}/delete`, { method: 'POST' });
-  const c1gone = await prisma.computer.findUnique({ where: { id: c1.id } });
-  const e1free = await prisma.employee.findUnique({ where: { id: e1.id }, include: { computer: true } });
-  check('Suppression d\'un poste affecte : poste supprime + employe libere', !c1gone && e1free && e1free.computer === null, 'incoherent');
+  await a(`/vehicles/${v1.id}/assign`, { method: 'POST', body: { employeeId: String(e1.id) } });
+  await a(`/vehicles/${v1.id}/delete`, { method: 'POST' });
+  const v1gone = await prisma.vehicle.findUnique({ where: { id: v1.id } });
+  const e1free = await prisma.employee.findUnique({ where: { id: e1.id }, include: { vehicle: true } });
+  check('Suppression d\'un vehicule affecte : vehicule supprime + employe libere', !v1gone && e1free && e1free.vehicle === null, 'incoherent');
   await a(`/employees/${e1.id}/delete`, { method: 'POST' });
   check('Suppression d\'un employe', !(await prisma.employee.findUnique({ where: { id: e1.id } })), 'encore present');
 
   section('COMPTEURS DU DASHBOARD');
-  // Etat attendu pour A : employes = 1 (e2), ordinateurs = 1 (c2), affectes = 0.
+  // Etat attendu pour A : employes = 1 (e2), vehicules = 1 (v2), affectes = 0.
   r = await a('/dashboard');
   check('Compteur employes = 1', statValue(r.text, 'Employés') === 1, `val=${statValue(r.text, 'Employés')}`);
-  check('Compteur ordinateurs = 1', statValue(r.text, 'Ordinateurs') === 1, `val=${statValue(r.text, 'Ordinateurs')}`);
-  check('Compteur postes affectes = 0', statValue(r.text, 'Postes affectés') === 0, `val=${statValue(r.text, 'Postes affectés')}`);
-  check('Compteur postes disponibles = 1', statValue(r.text, 'Postes disponibles') === 1, `val=${statValue(r.text, 'Postes disponibles')}`);
+  check('Compteur vehicules = 1', statValue(r.text, 'Véhicules') === 1, `val=${statValue(r.text, 'Véhicules')}`);
+  check('Compteur vehicules affectes = 0', statValue(r.text, 'Véhicules affectés') === 0, `val=${statValue(r.text, 'Véhicules affectés')}`);
+  check('Compteur vehicules disponibles = 1', statValue(r.text, 'Véhicules disponibles') === 1, `val=${statValue(r.text, 'Véhicules disponibles')}`);
 
   section('DÉCONNEXION & PAGES D\'ERREUR');
   r = await a('/logout', { method: 'POST' });
@@ -224,7 +241,7 @@ async function runTests() {
 }
 
 async function cleanup() {
-  // Supprime les entreprises de test (cascade -> employes + ordinateurs).
+  // Supprime les entreprises de test (cascade -> employes + vehicules).
   await prisma.company.deleteMany({ where: { siret: { in: [siretA, siretB] } } }).catch(() => {});
   await prisma.$disconnect().catch(() => {});
 }

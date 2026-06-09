@@ -20,7 +20,7 @@ model Company {
   updatedAt    DateTime @updatedAt
 
   employees Employee[]
-  computers Computer[]
+  vehicles  Vehicle[]
 }
 
 model Employee {
@@ -35,8 +35,8 @@ model Employee {
   companyId Int
   company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
-  // Cote "un" de la relation 1-1 : la cle etrangere est portee par Computer.
-  computer Computer?
+  // Cote "un" de la relation 1-1 : la cle etrangere est portee par Vehicle.
+  vehicle Vehicle?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -45,15 +45,19 @@ model Employee {
   @@unique([companyId, email])
 }
 
-model Computer {
-  id         Int    @id @default(autoincrement())
-  macAddress String @unique
+model Vehicle {
+  id                 Int     @id @default(autoincrement())
+  registrationNumber String  @unique
+  brand              String
+  model              String
+  year               Int?
+  transmission       String?
 
   companyId Int
   company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
-  // Relation 1-1 optionnelle : un poste a zero ou un employe.
-  // Le @unique garantit au niveau base qu'un employe n'occupe qu'un seul poste.
+  // Relation 1-1 optionnelle : un vehicule a zero ou un employe referent.
+  // Le @unique garantit au niveau base qu'un employe n'est referent que d'un seul vehicule.
   employeeId Int?      @unique
   employee   Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
 

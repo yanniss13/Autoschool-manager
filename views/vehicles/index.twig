@@ -2,15 +2,19 @@
 
 {% block content %}
   <section class="page-header">
-    <h1>Ordinateurs</h1>
-    <a href="/computers/new" class="btn btn-primary">+ Nouvel ordinateur</a>
+    <h1>Véhicules</h1>
+    <a href="/vehicles/new" class="btn btn-primary">+ Nouveau véhicule</a>
   </section>
 
-  {% if computers|length > 0 %}
+  {% if vehicles|length > 0 %}
     <table class="data-table">
       <thead>
         <tr>
-          <th>Adresse MAC</th>
+          <th>Immatriculation</th>
+          <th>Marque</th>
+          <th>Modèle</th>
+          <th>Année</th>
+          <th>Boîte</th>
           <th>Statut</th>
           <th>Employé affecté</th>
           <th>Affectation</th>
@@ -18,26 +22,34 @@
         </tr>
       </thead>
       <tbody>
-        {% for c in computers %}
+        {% for v in vehicles %}
           <tr>
-            <td>{{ c.macAddress }}</td>
+            <td>{{ v.registrationNumber }}</td>
+            <td>{{ v.brand }}</td>
+            <td>{{ v.model }}</td>
+            <td>{{ v.year|default('—') }}</td>
             <td>
-              {% if c.employee %}
+              {% if v.transmission == 'manual' %}Manuelle
+              {% elseif v.transmission == 'automatic' %}Automatique
+              {% else %}—{% endif %}
+            </td>
+            <td>
+              {% if v.employee %}
                 <span class="badge badge-assigned">Affecté</span>
               {% else %}
                 <span class="badge badge-available">Disponible</span>
               {% endif %}
             </td>
             <td>
-              {% if c.employee %}{{ c.employee.lastName }} {{ c.employee.firstName }}{% else %}—{% endif %}
+              {% if v.employee %}{{ v.employee.lastName }} {{ v.employee.firstName }}{% else %}—{% endif %}
             </td>
             <td>
-              {% if c.employee %}
-                <form action="/computers/{{ c.id }}/unassign" method="post" class="inline-form">
+              {% if v.employee %}
+                <form action="/vehicles/{{ v.id }}/unassign" method="post" class="inline-form">
                   <button type="submit" class="btn btn-small">Désaffecter</button>
                 </form>
               {% elseif assignableEmployees|length > 0 %}
-                <form action="/computers/{{ c.id }}/assign" method="post" class="assign-form">
+                <form action="/vehicles/{{ v.id }}/assign" method="post" class="assign-form">
                   <select name="employeeId" required>
                     <option value="">Choisir un employé…</option>
                     {% for e in assignableEmployees %}
@@ -51,9 +63,9 @@
               {% endif %}
             </td>
             <td class="actions">
-              <a href="/computers/{{ c.id }}/edit" class="btn btn-small">Modifier</a>
-              <form action="/computers/{{ c.id }}/delete" method="post" class="inline-form"
-                    onsubmit="return confirm('Supprimer cet ordinateur ?');">
+              <a href="/vehicles/{{ v.id }}/edit" class="btn btn-small">Modifier</a>
+              <form action="/vehicles/{{ v.id }}/delete" method="post" class="inline-form"
+                    onsubmit="return confirm('Supprimer ce véhicule ?');">
                 <button type="submit" class="btn btn-small btn-danger">Supprimer</button>
               </form>
             </td>
@@ -62,6 +74,6 @@
       </tbody>
     </table>
   {% else %}
-    <p class="muted">Aucun ordinateur pour le moment.</p>
+    <p class="muted">Aucun véhicule pour le moment.</p>
   {% endif %}
 {% endblock %}
