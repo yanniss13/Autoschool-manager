@@ -5,7 +5,7 @@ const express = require('express');
 const authRoutes = require('./authRoutes');
 const dashboardRoutes = require('./dashboardRoutes');
 const employeeRoutes = require('./employeeRoutes');
-const computerRoutes = require('./computerRoutes');
+const vehicleRoutes = require('./vehicleRoutes');
 const requireAuth = require('../middlewares/requireAuth');
 const loadCompany = require('../middlewares/loadCompany');
 
@@ -17,6 +17,6 @@ router.use('/', authRoutes);
 // Routes protegees : session obligatoire + entreprise courante chargee.
 router.use('/dashboard', requireAuth, loadCompany, dashboardRoutes);
 router.use('/employees', requireAuth, loadCompany, employeeRoutes);
-router.use('/computers', requireAuth, loadCompany, computerRoutes);
+router.use('/vehicles', requireAuth, loadCompany, vehicleRoutes);
 
 module.exports = router;

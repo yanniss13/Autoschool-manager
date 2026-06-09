@@ -1,0 +1,14 @@
+{% extends 'layouts/base.twig' %}
+
+{% block content %}
+  <section class="form-card">
+    <h1>Nouveau véhicule</h1>
+
+    <form action="/vehicles" method="post" novalidate>
+      {% include 'vehicles/_fields.twig' %}
+      <button type="submit" class="btn btn-primary">Créer</button>
+    </form>
+
+    <p class="form-footer"><a href="/vehicles">Retour à la liste</a></p>
+  </section>
+{% endblock %}

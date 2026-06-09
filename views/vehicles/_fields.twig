@@ -1,0 +1,39 @@
+{# Champs partages entre les formulaires de creation et d'edition de vehicule. #}
+<div class="form-group">
+  <label for="registrationNumber">Immatriculation</label>
+  <input type="text" id="registrationNumber" name="registrationNumber"
+         value="{{ values.registrationNumber|default('') }}"
+         placeholder="AB-123-CD" required>
+  {% if errors.registrationNumber %}<p class="field-error">{{ errors.registrationNumber }}</p>{% endif %}
+</div>
+
+<div class="form-group">
+  <label for="brand">Marque</label>
+  <input type="text" id="brand" name="brand" value="{{ values.brand|default('') }}" required>
+  {% if errors.brand %}<p class="field-error">{{ errors.brand }}</p>{% endif %}
+</div>
+
+<div class="form-group">
+  <label for="model">Modèle</label>
+  <input type="text" id="model" name="model" value="{{ values.model|default('') }}" required>
+  {% if errors.model %}<p class="field-error">{{ errors.model }}</p>{% endif %}
+</div>
+
+<div class="form-group">
+  <label for="year">Année <span class="muted">(optionnel)</span></label>
+  <input type="number" id="year" name="year" min="1" value="{{ values.year|default('') }}">
+  {% if errors.year %}<p class="field-error">{{ errors.year }}</p>{% endif %}
+</div>
+
+<div class="form-group">
+  <label for="transmission">Boîte de vitesses <span class="muted">(optionnel)</span></label>
+  <select id="transmission" name="transmission">
+    <option value="">—</option>
+    {% for t in transmissions %}
+      <option value="{{ t }}" {% if values.transmission == t %}selected{% endif %}>
+        {% if t == 'manual' %}Manuelle{% else %}Automatique{% endif %}
+      </option>
+    {% endfor %}
+  </select>
+  {% if errors.transmission %}<p class="field-error">{{ errors.transmission }}</p>{% endif %}
+</div>
