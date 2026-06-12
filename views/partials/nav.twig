@@ -6,6 +6,7 @@
       <a href="/employees">Employés</a>
       <a href="/vehicles">Véhicules</a>
       <form action="/logout" method="post" class="inline-form">
+        <input type="hidden" name="_csrf" value="{{ csrfToken }}">
         <button type="submit" class="link-button">Déconnexion</button>
       </form>
     {% else %}

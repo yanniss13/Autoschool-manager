@@ -5,6 +5,7 @@
     <h1>Inscription de l'auto-école</h1>
 
     <form action="/register" method="post" novalidate>
+      <input type="hidden" name="_csrf" value="{{ csrfToken }}">
       <div class="form-group">
         <label for="businessName">Raison sociale</label>
         <input type="text" id="businessName" name="businessName"

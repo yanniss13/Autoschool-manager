@@ -1,5 +1,6 @@
 {# Champs partages entre les formulaires de creation et d'edition.
    Variable attendue : isEdit (booleen). #}
+<input type="hidden" name="_csrf" value="{{ csrfToken }}">
 <div class="form-group">
   <label for="lastName">Nom</label>
   <input type="text" id="lastName" name="lastName" value="{{ values.lastName|default('') }}" required>

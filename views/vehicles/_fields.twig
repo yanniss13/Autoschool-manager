@@ -1,4 +1,5 @@
 {# Champs partages entre les formulaires de creation et d'edition de vehicule. #}
+<input type="hidden" name="_csrf" value="{{ csrfToken }}">
 <div class="form-group">
   <label for="registrationNumber">Immatriculation</label>
   <input type="text" id="registrationNumber" name="registrationNumber"

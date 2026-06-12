@@ -47,10 +47,12 @@ function section(title) {
   console.log('\n' + title);
 }
 
-// --- Client HTTP avec son propre cookie de session ---
+// --- Client HTTP avec son propre cookie de session + jeton CSRF ---
 function makeClient() {
   let cookie = '';
-  return async function req(p, { method = 'GET', body } = {}) {
+  let csrfToken = null;
+
+  async function raw(p, { method = 'GET', body } = {}) {
     const headers = {};
     if (cookie) headers.Cookie = cookie;
     let payload;
@@ -60,8 +62,37 @@ function makeClient() {
     }
     const res = await fetch(BASE + p, { method, headers, body: payload, redirect: 'manual' });
     const setCookie = res.headers.get('set-cookie');
-    if (setCookie) cookie = setCookie.split(';')[0];
+    if (setCookie) {
+      const next = setCookie.split(';')[0];
+      // Si la session change (ex. regeneration anti-fixation au login), le jeton
+      // CSRF lie a l'ancienne session devient invalide : on le force a etre renouvele.
+      if (next !== cookie) {
+        cookie = next;
+        csrfToken = null;
+      }
+    }
     return { status: res.status, location: res.headers.get('location'), text: await res.text() };
+  }
+
+  // Injecte automatiquement le jeton CSRF dans les requetes modifiantes
+  // (comme le ferait un navigateur via le champ cache _csrf des formulaires).
+  return async function req(p, opts = {}) {
+    const method = opts.method || 'GET';
+    if (method !== 'GET' && method !== 'HEAD') {
+      if (!csrfToken) {
+        // Recupere le jeton depuis le meta d'une page rendue. Une fois connecte,
+        // '/' redirige vers /dashboard : on suit alors la redirection pour tomber
+        // sur une page 200 qui porte la balise meta csrf-token.
+        let page = await raw('/'); // etablit la session + recupere le jeton
+        if (page.status >= 300 && page.status < 400 && page.location) {
+          page = await raw(page.location);
+        }
+        const m = page.text.match(/name="csrf-token" content="([^"]+)"/);
+        csrfToken = m ? m[1] : '';
+      }
+      opts = { ...opts, body: { ...(opts.body || {}), _csrf: csrfToken } };
+    }
+    return raw(p, opts);
   };
 }
 

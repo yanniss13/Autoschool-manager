@@ -85,10 +85,16 @@ async function login(req, res, next) {
       });
     }
 
-    // On ne stocke que l'identifiant de la company connectee en session.
-    req.session.companyId = company.id;
-    req.flash('success', 'Connexion réussie.');
-    res.redirect('/dashboard');
+    // Anti session-fixation : on regenere l'ID de session a la connexion, pour
+    // qu'un identifiant de session pose AVANT l'authentification (ex. fixe par un
+    // attaquant) ne reste pas valable une fois la company connectee.
+    req.session.regenerate((err) => {
+      if (err) return next(err);
+      // On ne stocke que l'identifiant de la company connectee en session.
+      req.session.companyId = company.id;
+      req.flash('success', 'Connexion réussie.');
+      res.redirect('/dashboard');
+    });
   } catch (err) {
     next(err);
   }
