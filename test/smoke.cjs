@@ -258,6 +258,26 @@ async function runTests() {
   check('Compteur vehicules affectes = 0', statValue(r.text, 'Véhicules affectés') === 0, `val=${statValue(r.text, 'Véhicules affectés')}`);
   check('Compteur vehicules disponibles = 1', statValue(r.text, 'Véhicules disponibles') === 1, `val=${statValue(r.text, 'Véhicules disponibles')}`);
 
+  section('SÉCURITÉ & VALIDATIONS');
+  // CSRF : un POST sans jeton valide est rejete (403), meme avec une session etablie.
+  const home = await fetch(BASE + '/', { redirect: 'manual' });
+  const sessionCookie = (home.headers.get('set-cookie') || '').split(';')[0];
+  const csrfRes = await fetch(BASE + '/login', {
+    method: 'POST',
+    headers: { Cookie: sessionCookie, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ siret: siretA, password: 'password123', _csrf: 'jeton-invalide' }).toString(),
+    redirect: 'manual',
+  });
+  check('POST sans jeton CSRF valide -> 403', csrfRes.status === 403, `status=${csrfRes.status}`);
+
+  // Validation : age hors bornes refuse (400).
+  r = await a('/employees', { method: 'POST', body: { firstName: 'Bornes', lastName: 'Age', email: `age${stamp}@test.fr`, password: 'secret12', age: '200' } });
+  check('Création employé refusée si âge hors bornes', r.status === 400 && /entre 14 et 120/.test(r.text), `status=${r.status}`);
+
+  // Validation : annee vehicule hors bornes refusee (400).
+  r = await a('/vehicles', { method: 'POST', body: { registrationNumber: 'ZZ-999-ZZ', brand: 'Test', model: 'Bornes', year: '1800' } });
+  check('Création véhicule refusée si année hors bornes', r.status === 400 && /entre 1900/.test(r.text), `status=${r.status}`);
+
   section('DÉCONNEXION & PAGES D\'ERREUR');
   r = await a('/logout', { method: 'POST' });
   check('Deconnexion (-> /login)', r.status === 302 && r.location === '/login', `status=${r.status}`);

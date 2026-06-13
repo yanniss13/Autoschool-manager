@@ -1,5 +1,8 @@
 // Validation serveur des donnees d'inscription et de connexion d'une auto-ecole.
 
+const PASSWORD_MIN = 8;
+const PASSWORD_MAX = 72; // bcrypt ignore au-dela de 72 octets : on refuse explicitement.
+
 // Normalise un SIRET : ne conserve que les chiffres.
 function normalizeSiret(value) {
   return (value || '').replace(/\D/g, '');
@@ -28,8 +31,10 @@ function validateRegister(body) {
 
   if (!password) {
     errors.password = 'Le mot de passe est obligatoire.';
-  } else if (password.length < 8) {
-    errors.password = 'Le mot de passe doit contenir au moins 8 caractères.';
+  } else if (password.length < PASSWORD_MIN) {
+    errors.password = `Le mot de passe doit contenir au moins ${PASSWORD_MIN} caractères.`;
+  } else if (Buffer.byteLength(password, 'utf8') > PASSWORD_MAX) {
+    errors.password = `Le mot de passe ne doit pas dépasser ${PASSWORD_MAX} caractères.`;
   }
 
   if (password !== passwordConfirm) {

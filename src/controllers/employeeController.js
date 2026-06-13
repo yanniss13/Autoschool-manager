@@ -3,18 +3,9 @@
 const employeeService = require('../services/employeeService');
 const { validateEmployee, GENDERS } = require('../validators/employeeValidator');
 const password = require('../utils/password');
+const { parseId, notFound } = require('../utils/http');
 
 const EMAIL_TAKEN = 'Cet email est déjà utilisé dans votre entreprise.';
-
-// Renvoie l'id numerique de l'URL, ou null si invalide.
-function parseId(raw) {
-  const id = Number(raw);
-  return Number.isInteger(id) && id > 0 ? id : null;
-}
-
-function notFound(res) {
-  return res.status(404).render('errors/404', { title: 'Introuvable' });
-}
 
 // GET /employees
 async function index(req, res, next) {

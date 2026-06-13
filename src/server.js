@@ -15,9 +15,22 @@ if (manquants.length > 0) {
 }
 
 const app = require('./app');
+const prisma = require('./config/prisma');
 
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`AutoSchool Manager demarre sur http://localhost:${PORT}`);
 });
+
+// Arret propre : on ferme le serveur HTTP puis on libere la connexion Prisma,
+// pour ne pas laisser de connexions ouvertes lors d'un Ctrl+C ou d'un redeploiement.
+function shutdown(signal) {
+  console.log(`\n${signal} recu — arret du serveur...`);
+  server.close(() => {
+    prisma.$disconnect().finally(() => process.exit(0));
+  });
+  // Filet de securite : si des connexions trainent, on force la sortie.
+  setTimeout(() => process.exit(0), 10000).unref();
+}
+['SIGINT', 'SIGTERM'].forEach((sig) => process.on(sig, () => shutdown(sig)));

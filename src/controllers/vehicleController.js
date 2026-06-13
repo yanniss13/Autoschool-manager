@@ -2,17 +2,9 @@
 // Protege en amont par requireAuth + loadCompany : req.company est toujours defini.
 const vehicleService = require('../services/vehicleService');
 const { validateVehicle, TRANSMISSIONS } = require('../validators/vehicleValidator');
+const { parseId, notFound } = require('../utils/http');
 
 const REG_TAKEN = 'Cette immatriculation est déjà utilisée.';
-
-function parseId(raw) {
-  const id = Number(raw);
-  return Number.isInteger(id) && id > 0 ? id : null;
-}
-
-function notFound(res) {
-  return res.status(404).render('errors/404', { title: 'Introuvable' });
-}
 
 // GET /vehicles
 async function index(req, res, next) {

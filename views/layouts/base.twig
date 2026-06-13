@@ -8,9 +8,10 @@
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
+  <a href="#main" class="skip-link">Aller au contenu</a>
   {% include 'partials/nav.twig' %}
 
-  <main class="container">
+  <main id="main" class="container">
     {% include 'partials/flash.twig' %}
 
     {% block content %}{% endblock %}

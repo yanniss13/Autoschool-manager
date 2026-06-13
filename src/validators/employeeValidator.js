@@ -3,6 +3,11 @@
 // Liste controlee des genres acceptes (le champ reste optionnel).
 const GENDERS = ['homme', 'femme', 'autre'];
 
+const PASSWORD_MIN = 8;
+const PASSWORD_MAX = 72; // limite bcrypt (octets) : evite toute troncature silencieuse.
+const AGE_MIN = 14;
+const AGE_MAX = 120;
+
 function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
@@ -29,23 +34,24 @@ function validateEmployee(body, { isCreate }) {
     errors.email = "L'email n'est pas valide.";
   }
 
-  // Mot de passe : requis a la creation, optionnel a l'edition.
-  if (isCreate) {
+  // Mot de passe : requis a la creation, optionnel a l'edition. Borne haute = limite
+  // bcrypt (72 octets) pour eviter toute troncature silencieuse.
+  if (isCreate || password) {
     if (!password) {
       errors.password = 'Le mot de passe est obligatoire.';
-    } else if (password.length < 8) {
-      errors.password = 'Le mot de passe doit contenir au moins 8 caractères.';
+    } else if (password.length < PASSWORD_MIN) {
+      errors.password = `Le mot de passe doit contenir au moins ${PASSWORD_MIN} caractères.`;
+    } else if (Buffer.byteLength(password, 'utf8') > PASSWORD_MAX) {
+      errors.password = `Le mot de passe ne doit pas dépasser ${PASSWORD_MAX} caractères.`;
     }
-  } else if (password && password.length < 8) {
-    errors.password = 'Le mot de passe doit contenir au moins 8 caractères.';
   }
 
-  // Age optionnel : entier strictement positif si fourni.
+  // Age optionnel : entier dans une plage plausible si fourni.
   let age = null;
   if (ageRaw !== '') {
     const n = Number(ageRaw);
-    if (!Number.isInteger(n) || n <= 0) {
-      errors.age = "L'âge doit être un entier positif.";
+    if (!Number.isInteger(n) || n < AGE_MIN || n > AGE_MAX) {
+      errors.age = `L'âge doit être un entier compris entre ${AGE_MIN} et ${AGE_MAX}.`;
     } else {
       age = n;
     }

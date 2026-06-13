@@ -21,8 +21,27 @@ const loginLimiter = rateLimit({
   },
 });
 
+// Anti-abus : limite la creation de comptes par IP (creation massive de comptes).
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 heure
+  limit: 20, // 20 inscriptions max par IP sur la fenetre
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    res.status(429).render('auth/register', {
+      title: 'Inscription',
+      errors: { global: "Trop de tentatives d'inscription. Réessayez plus tard." },
+      values: {
+        businessName: req.body.businessName,
+        siret: req.body.siret,
+        directorName: req.body.directorName,
+      },
+    });
+  },
+});
+
 router.get('/register', redirectIfAuth, authController.showRegister);
-router.post('/register', redirectIfAuth, authController.register);
+router.post('/register', registerLimiter, redirectIfAuth, authController.register);
 
 router.get('/login', redirectIfAuth, authController.showLogin);
 router.post('/login', loginLimiter, redirectIfAuth, authController.login);

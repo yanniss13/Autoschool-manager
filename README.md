@@ -63,6 +63,27 @@ données d'une autre entreprise.
 - **GET / POST uniquement** : les formulaires HTML natifs ne gèrent que ces deux
   verbes, cohérent avec un rendu serveur sans JavaScript.
 
+## Sécurité
+
+Défense en profondeur adaptée à un rendu serveur :
+
+- **Mots de passe** hachés avec **bcrypt** (jamais stockés ni affichés en clair) ;
+  longueur min. 8 et max. 72 octets (limite bcrypt → pas de troncature silencieuse).
+- **Protection CSRF** par jeton de session (*synchronizer token*) : champ caché
+  `_csrf` dans chaque formulaire + balise meta, vérifié sur tout POST/PUT/PATCH/DELETE.
+- **En-têtes HTTP** durcis via **Helmet** (X-Content-Type-Options, X-Frame-Options,
+  Referrer-Policy, HSTS…).
+- **Auto-échappement Twig** activé : toute `{{ variable }}` est échappée (anti-XSS
+  stocké) ; aucune vue n'utilise `|raw`.
+- **Cookie de session** `httpOnly`, `sameSite=lax`, et `secure` en production.
+- **Régénération de session à la connexion** (anti *session-fixation*).
+- **Limitation de débit** (rate-limiting) sur la connexion (anti brute-force) et
+  l'inscription (anti création massive de comptes).
+- **Validation systématiquement refaite côté serveur** ; identifiants d'URL validés
+  (toute ressource inexistante ou d'une autre entreprise → **404**, sans fuite).
+- **Fail-fast au démarrage** si `SESSION_SECRET` est absent (pas de repli silencieux
+  sur un secret faible).
+
 ## Structure du projet
 
 ```
@@ -111,8 +132,9 @@ npm run prisma:migrate
 | Variable | Rôle | Exemple |
 |---|---|---|
 | `DATABASE_URL` | Emplacement de la base SQLite (relatif au dossier `prisma/`) | `file:./dev.db` |
-| `SESSION_SECRET` | Secret de signature des cookies de session | une longue chaîne aléatoire |
+| `SESSION_SECRET` | Secret de signature des cookies de session (**obligatoire**) | une longue chaîne aléatoire |
 | `PORT` | Port d'écoute du serveur | `3000` |
+| `NODE_ENV` | `production` active les cookies `secure` (HTTPS) et `trust proxy` | `development` |
 
 ## Lancer le projet
 
@@ -152,12 +174,13 @@ Il démarre un serveur dédié (port 3100, sans gêner `npm run dev`), effectue 
 vraies requêtes HTTP, vérifie certaines données en base via Prisma, puis
 **supprime ses propres données de test** (la base reste propre).
 
-Couverture (38 vérifications) :
+Couverture (44 vérifications) :
 - authentification & session (inscription, connexion, protection, déconnexion) ;
 - CRUD employés (validation, unicité de l'email, hachage du mot de passe) ;
 - CRUD véhicules (normalisation et unicité de l'immatriculation) ;
 - affectation / désaffectation et règle « un seul véhicule par employé » ;
 - cloisonnement multi-entreprises (accès cross-tenant → 404) ;
+- sécurité & validations (rejet d'un POST sans jeton CSRF, bornes d'âge et d'année) ;
 - compteurs du dashboard et pages d'erreur 404 / 500.
 
 > Prérequis : avoir lancé l'installation et la migration au moins une fois

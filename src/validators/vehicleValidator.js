@@ -3,6 +3,9 @@
 // Boites de vitesses acceptees (champ optionnel).
 const TRANSMISSIONS = ['manual', 'automatic'];
 
+const YEAR_MIN = 1900;
+const YEAR_MAX = new Date().getFullYear() + 1; // tolere un millesime annonce pour l'an prochain.
+
 // Plaque francaise SIV (compactee) : 2 lettres, 3 chiffres, 2 lettres.
 function isValidPlate(compact) {
   return /^[A-Z]{2}[0-9]{3}[A-Z]{2}$/.test(compact);
@@ -36,12 +39,12 @@ function validateVehicle(body) {
   if (!brand) errors.brand = 'La marque est obligatoire.';
   if (!model) errors.model = 'Le modèle est obligatoire.';
 
-  // Annee optionnelle : entier strictement positif si fournie.
+  // Annee optionnelle : entier dans une plage plausible si fournie.
   let year = null;
   if (yearRaw !== '') {
     const n = Number(yearRaw);
-    if (!Number.isInteger(n) || n <= 0) {
-      errors.year = "L'année doit être un entier positif.";
+    if (!Number.isInteger(n) || n < YEAR_MIN || n > YEAR_MAX) {
+      errors.year = `L'année doit être comprise entre ${YEAR_MIN} et ${YEAR_MAX}.`;
     } else {
       year = n;
     }

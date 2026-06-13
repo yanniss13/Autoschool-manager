@@ -11,6 +11,13 @@ const routes = require('./routes');
 
 const app = express();
 
+// En production, l'app tourne derriere un reverse-proxy (HTTPS termine par Nginx,
+// etc.). "trust proxy" permet a Express de lire X-Forwarded-* : cookie `secure`
+// correct et rate-limiter base sur la vraie IP client (sinon tout serait compte
+// sous l'IP du proxy, rendant la limite contournable).
+const isProd = process.env.NODE_ENV === 'production';
+if (isProd) app.set('trust proxy', 1);
+
 // --- Securite : en-tetes HTTP (Helmet) ---
 // Ajoute X-Content-Type-Options, X-Frame-Options, Referrer-Policy, HSTS, etc.
 // CSP desactivee volontairement pour ne pas casser le dev local (HTTP) ni les
@@ -38,6 +45,7 @@ app.use(
     cookie: {
       httpOnly: true, // cookie non lisible en JS (anti-vol par XSS)
       sameSite: 'lax', // pas envoye en cross-site (couche anti-CSRF supplementaire)
+      secure: isProd, // cookie transmis uniquement en HTTPS (production)
       maxAge: 1000 * 60 * 60 * 2, // 2 heures
     },
   })
