@@ -266,31 +266,35 @@ async function runTests() {
     }));
   check('Creneau persiste en base', !!createdSlot, 'creneau introuvable');
 
-  // L'agenda horaire gerant affiche le creneau de l'employe dans la bonne semaine.
-  // slotStart = '2030-01-02T09:00' -> semaine du lundi 2029-12-31.
-  r = await a(`/planning?employeeId=${e1.id}&week=2029-12-31`);
-  check('Agenda gerant -> 200 avec axe horaire', r.status === 200 && /07h/.test(r.text), `status=${r.status}`);
-  check('Agenda gerant affiche le creneau', /Cours de conduite/.test(r.text) && /09:00/.test(r.text), 'creneau absent de l agenda');
-  check('Agenda gerant propose la creation par creneau horaire', /\/planning\/new\?employeeId=/.test(r.text), 'lien de creation absent');
+  // Page planning : conteneur FullCalendar (les creneaux sont charges via /planning/events).
+  r = await a(`/planning?employeeId=${e1.id}`);
+  check('Planning gerant -> 200 avec calendrier FullCalendar', r.status === 200 && /id="calendar"/.test(r.text) && /fullcalendar/i.test(r.text), `status=${r.status}`);
+  check('Calendrier pointe vers /planning/events', /data-events-url="\/planning\/events\?employeeId=/.test(r.text), 'events url absente');
+
+  // Endpoint JSON consomme par FullCalendar.
+  r = await a(`/planning/events?employeeId=${e1.id}&start=2029-12-01&end=2030-02-01`);
+  check('Events gerant -> JSON avec le creneau', r.status === 200 && /Cours de conduite/.test(r.text) && /2030-01-02T09:00/.test(r.text), `status=${r.status}`);
+
+  // Drag & drop : un deplacement (nouvelles heures) persiste en base.
+  r = await a(`/planning/${createdSlot.id}/move`, { method: 'POST', body: { start: '2030-01-02T11:00', end: '2030-01-02T12:30' } });
+  const movedSlot = await prisma.scheduleSlot.findUnique({ where: { id: createdSlot.id } });
+  check('Deplacement creneau (move) persiste', r.status === 200 && movedSlot.startsAt.getHours() === 11 && movedSlot.endsAt.getMinutes() === 30, `status=${r.status}`);
+  r = await a(`/planning/${createdSlot.id}/move`, { method: 'POST', body: { start: '2030-01-02T12:00', end: '2030-01-02T11:00' } });
+  check('Move refuse si start >= end (400)', r.status === 400, `status=${r.status}`);
 
   const employeeClient = makeClient();
   r = await employeeClient('/employee-login', { method: 'POST', body: { email: emailA1, password: 'nouveau123' } });
   const employeeLoggedIn = r.status === 302 && r.location === '/employee-space';
   check('Connexion employe par email + mot de passe', employeeLoggedIn, `status=${r.status}`);
-  // Agenda employe (lecture seule) sur la semaine du creneau : creneau + vehicule affecte.
-  r = await employeeClient('/employee-space?week=2029-12-31');
+  // Espace employe (lecture seule) : page calendrier + vehicule affecte, puis events JSON.
+  r = await employeeClient('/employee-space');
   check(
-    'Espace employe affiche son agenda et le vehicule affecte',
-    employeeLoggedIn &&
-      r.status === 200 &&
-      /Cours de conduite/.test(r.text) &&
-      /07h/.test(r.text) &&
-      r.text.includes(plate1),
+    'Espace employe -> 200 avec calendrier et vehicule affecte',
+    employeeLoggedIn && r.status === 200 && /id="calendar"/.test(r.text) && r.text.includes(plate1),
     `status=${r.status}`
   );
-  // Les creneaux passes restent consultables en naviguant : 2020-01-02 -> semaine du 2019-12-30.
-  r = await employeeClient('/employee-space?week=2019-12-30');
-  check('Espace employe : anciens creneaux consultables par navigation', /Ancien creneau visible/.test(r.text), 'ancien creneau introuvable');
+  r = await employeeClient('/employee-space/events?start=2029-12-01&end=2030-02-01');
+  check('Events employe -> JSON avec son creneau', r.status === 200 && /Cours de conduite/.test(r.text), `status=${r.status}`);
   r = await employeeClient('/dashboard');
   check('Employe connecte refuse sur routes gerant', employeeLoggedIn && r.status === 302 && r.location === '/login', `status=${r.status}`);
 
@@ -318,6 +322,10 @@ async function runTests() {
   check('Entreprise B ne peut pas affecter un vehicule de A (404)', r.status === 404, `status=${r.status}`);
   r = createdSlot ? await b(`/planning/${createdSlot.id}/edit`) : { status: 500 };
   check('Entreprise B ne peut pas editer un creneau de A (404)', r.status === 404, `status=${r.status}`);
+  r = await b(`/planning/events?employeeId=${e1.id}&start=2029-12-01&end=2030-02-01`);
+  check('Entreprise B ne lit pas les events d un employe de A (404)', r.status === 404, `status=${r.status}`);
+  r = createdSlot ? await b(`/planning/${createdSlot.id}/move`, { method: 'POST', body: { start: '2030-01-02T08:00', end: '2030-01-02T09:00' } }) : { status: 500 };
+  check('Entreprise B ne deplace pas un creneau de A (404)', r.status === 404, `status=${r.status}`);
 
   section('SUPPRESSIONS');
   await a(`/vehicles/${v1.id}/assign`, { method: 'POST', body: { employeeId: String(e1.id) } });
