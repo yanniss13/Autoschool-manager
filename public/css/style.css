@@ -436,57 +436,13 @@ body {
   }
 }
 
-/* ===== Agenda planning (axe horaire 07h-20h) ===== */
+/* ===== Planning (FullCalendar) ===== */
 .planning-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
 .planning-toolbar { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
-.planning-week-label { font-weight: 600; }
-.planning-weekday { display: block; font-size: 0.75rem; color: #6b7280; }
-.planning-daynum { display: block; font-size: 1rem; }
+.planning-hint { margin: 0 0 0.75rem; }
 
 .agenda-employee-picker { display: flex; align-items: center; gap: 0.5rem; }
 .agenda-employee-picker select { padding: 4px 8px; }
 
-.agenda { --agenda-row: 42px; }
-.agenda-week-nav { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; }
-.agenda-scroll { overflow-x: auto; }
-.agenda-grid {
-  display: grid;
-  grid-template-columns: 52px repeat(7, minmax(96px, 1fr));
-  min-width: 760px;
-  border: 1px solid #e5e7eb;
-}
-.agenda-corner { border-bottom: 1px solid #e5e7eb; }
-.agenda-day-head {
-  text-align: center; padding: 6px 2px;
-  border-bottom: 1px solid #e5e7eb; border-left: 1px solid #e5e7eb; background: #f9fafb;
-}
-
-.agenda-hours { display: flex; flex-direction: column; }
-.agenda-hour-label {
-  height: var(--agenda-row); font-size: 0.7rem; color: #6b7280;
-  text-align: right; padding-right: 6px; transform: translateY(-0.55em);
-}
-
-.agenda-day-body { position: relative; height: calc(var(--agenda-row) * 13); border-left: 1px solid #e5e7eb; }
-.agenda-hour-cell { display: block; height: var(--agenda-row); border-top: 1px solid #f1f5f9; box-sizing: border-box; }
-.agenda-hour-cell:first-child { border-top: none; }
-a.agenda-hour-cell--add:hover { background: #f8fafc; }
-
-.agenda-block {
-  position: absolute; left: 3px; right: 3px; min-height: 16px;
-  border-radius: 6px; padding: 2px 5px; overflow: hidden; box-sizing: border-box;
-  font-size: 0.72rem; color: #1f2937; text-decoration: none;
-  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.08);
-}
-.agenda-block-time { display: block; font-weight: 600; }
-.agenda-block-title { display: block; font-size: 0.68rem; color: #374151; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-/* Palette pastel (8 teintes) alignee sur slot-color-N du controller. */
-.slot-color-0 { background: #dbeafe; }
-.slot-color-1 { background: #ede9fe; }
-.slot-color-2 { background: #dcfce7; }
-.slot-color-3 { background: #fed7aa; }
-.slot-color-4 { background: #fce7f3; }
-.slot-color-5 { background: #cffafe; }
-.slot-color-6 { background: #fef9c3; }
-.slot-color-7 { background: #e0f2fe; }
+/* Conteneur FullCalendar : la mise en forme interne vient du bundle vendor. */
+#calendar { font-size: 0.9rem; }
