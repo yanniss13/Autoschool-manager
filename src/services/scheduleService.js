@@ -63,6 +63,18 @@ function findAllForEmployee(employeeId) {
   });
 }
 
+// Creneaux d'un employe chevauchant la fenetre [rangeStart, rangeEnd).
+function findByEmployeeBetween(employeeId, rangeStart, rangeEnd) {
+  return prisma.scheduleSlot.findMany({
+    where: {
+      employeeId,
+      startsAt: { lt: rangeEnd },
+      endsAt: { gt: rangeStart },
+    },
+    orderBy: { startsAt: 'asc' },
+  });
+}
+
 module.exports = {
   findAllByCompany,
   findOwnedById,
@@ -71,4 +83,5 @@ module.exports = {
   updateOwned,
   deleteOwned,
   findAllForEmployee,
+  findByEmployeeBetween,
 };
