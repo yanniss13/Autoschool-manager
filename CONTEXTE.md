@@ -163,11 +163,31 @@ sur **`/login`** (SIRET + mot de passe).
 - ⚠️ Reste le `onchange="this.form.submit()"` inline du sélecteur d'employé — à nettoyer avec
   une CSP stricte (cf. §9).
 
+## 8 bis. Module Élève (branche `feature/eleves`)
+
+- Nouveau modèle **`Student`** (scopé `companyId`) : `firstName`, `lastName` (requis),
+  `email`, `phone` (optionnels). `Company.students[]`. **Migration**
+  `20260615115528_add_students_and_slot_link`.
+- `ScheduleSlot` gagne **`studentId`** (colonne **nullable** en base pour ne pas casser les
+  créneaux existants, mais **exigée par le validateur** sur toute création/édition) +
+  relation `student` **`onDelete: Cascade`** (supprimer un élève supprime ses créneaux).
+- **CRUD élève** complet calqué sur `employees` (sans mot de passe) : `studentValidator`,
+  `studentService`, `studentController`, `studentRoutes` sur **`/students`**. Vues
+  `students/{index,new,edit,_fields}`. Lien **« Eleves »** dans la nav, compteur **Élèves**
+  au dashboard. Isolation `companyId` (cross-tenant → 404).
+- **Planning** : le formulaire créneau a un **sélecteur d'élève requis** ; le titre des
+  événements FullCalendar inclut l'élève (`Cours de conduite — Dupont Marie`), côté gérant
+  et employé.
+- `npm test` → **76/76** ✅ (CRUD élève, créneau avec/sans élève, isolation B→A, cascade).
+- ⚠️ La migration a nécessité d'**arrêter `npm run dev`** (verrou Windows EPERM sur la DLL
+  Prisma lors du `generate`). Le serveur de dev a été tué — **le relancer** avec `npm run dev`.
+
 ### État git
 
 - `main` = **FullCalendar** (version retenue), `npm test` → **66/66** ✅.
-- Point de retour agenda maison : tag **`agenda-maison-v1`** + branche `feature/planning-agenda-horaire`.
-  Branches `feature/planning-fullcalendar` (= main) et `feature/planning-grille-hebdo` conservées
+- **Module élève en cours sur la branche `feature/eleves`** (depuis `main`, 76/76 ✅), non
+  fusionnée. Point de retour agenda maison : tag **`agenda-maison-v1`**.
+  Branches `feature/planning-agenda-horaire` / `feature/planning-grille-hebdo` conservées
   comme historique. **Aucun push** (règle projet). `.vscode/` non commité.
 
 ## 9. Pistes pour la suite

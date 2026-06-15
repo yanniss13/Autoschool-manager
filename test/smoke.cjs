@@ -234,6 +234,21 @@ async function runTests() {
   v1 = await prisma.vehicle.findUnique({ where: { id: v1.id } });
   check('Affectation d\'un employe disponible', v1.employeeId === e1.id, `employeeId=${v1.employeeId}`);
 
+  section('CRUD ÉLÈVES');
+  r = await a('/students', { method: 'POST', body: { firstName: 'Eleve', lastName: 'Dupont', email: `eleve${stamp}@test.fr`, phone: '0612345678' } });
+  check('Creation eleve valide', r.status === 302 && r.location === '/students', `status=${r.status}`);
+  const studentA = await prisma.student.findFirst({ where: { companyId: companyA.id } });
+  check('Eleve persiste en base', !!studentA, 'eleve introuvable');
+  r = await a('/students');
+  check('Liste eleves affichee', r.status === 200 && r.text.includes('Dupont'), `status=${r.status}`);
+  r = await a('/students', { method: 'POST', body: { firstName: '', lastName: 'SansPrenom' } });
+  check('Creation eleve refusee sans prenom (400)', r.status === 400 && /prénom/i.test(r.text), `status=${r.status}`);
+  r = await a('/students', { method: 'POST', body: { firstName: 'Bad', lastName: 'Email', email: 'pas-un-email' } });
+  check('Creation eleve refusee si email invalide (400)', r.status === 400 && /valide/i.test(r.text), `status=${r.status}`);
+  await a(`/students/${studentA.id}/update`, { method: 'POST', body: { firstName: 'EleveMod', lastName: 'Dupont', email: '', phone: '' } });
+  const studentMod = await prisma.student.findUnique({ where: { id: studentA.id } });
+  check('Edition eleve (email vide -> null)', studentMod.firstName === 'EleveMod' && studentMod.email === null, 'edition ko');
+
   section('PLANNING & ESPACE EMPLOYE');
   const slotStart = '2030-01-02T09:00';
   const slotEnd = '2030-01-02T10:00';
@@ -241,6 +256,7 @@ async function runTests() {
     method: 'POST',
     body: {
       employeeId: String(e1.id),
+      studentId: String(studentA.id),
       title: 'Cours de conduite',
       startsAt: slotStart,
       endsAt: slotEnd,
@@ -252,6 +268,17 @@ async function runTests() {
     method: 'POST',
     body: {
       employeeId: String(e1.id),
+      title: 'Sans eleve',
+      startsAt: '2030-01-03T09:00',
+      endsAt: '2030-01-03T10:00',
+    },
+  });
+  check('Creation creneau refusee sans eleve (400)', r.status === 400 && /eleve est obligatoire/i.test(r.text), `status=${r.status}`);
+  r = await a('/planning', {
+    method: 'POST',
+    body: {
+      employeeId: String(e1.id),
+      studentId: String(studentA.id),
       title: 'Ancien creneau visible',
       startsAt: '2020-01-02T09:00',
       endsAt: '2020-01-02T10:00',
@@ -273,7 +300,7 @@ async function runTests() {
 
   // Endpoint JSON consomme par FullCalendar.
   r = await a(`/planning/events?employeeId=${e1.id}&start=2029-12-01&end=2030-02-01`);
-  check('Events gerant -> JSON avec le creneau', r.status === 200 && /Cours de conduite/.test(r.text) && /2030-01-02T09:00/.test(r.text), `status=${r.status}`);
+  check('Events gerant -> JSON avec le creneau et l eleve', r.status === 200 && /Cours de conduite/.test(r.text) && /Dupont/.test(r.text) && /2030-01-02T09:00/.test(r.text), `status=${r.status}`);
 
   // Drag & drop : un deplacement (nouvelles heures) persiste en base.
   r = await a(`/planning/${createdSlot.id}/move`, { method: 'POST', body: { start: '2030-01-02T11:00', end: '2030-01-02T12:30' } });
@@ -326,6 +353,10 @@ async function runTests() {
   check('Entreprise B ne lit pas les events d un employe de A (404)', r.status === 404, `status=${r.status}`);
   r = createdSlot ? await b(`/planning/${createdSlot.id}/move`, { method: 'POST', body: { start: '2030-01-02T08:00', end: '2030-01-02T09:00' } }) : { status: 500 };
   check('Entreprise B ne deplace pas un creneau de A (404)', r.status === 404, `status=${r.status}`);
+  r = await b(`/students/${studentA.id}/edit`);
+  check('Entreprise B ne peut pas editer un eleve de A (404)', r.status === 404, `status=${r.status}`);
+  r = await b(`/students/${studentA.id}/delete`, { method: 'POST' });
+  check('Entreprise B ne peut pas supprimer un eleve de A (404)', r.status === 404, `status=${r.status}`);
 
   section('SUPPRESSIONS');
   await a(`/vehicles/${v1.id}/assign`, { method: 'POST', body: { employeeId: String(e1.id) } });
@@ -333,6 +364,10 @@ async function runTests() {
   const v1gone = await prisma.vehicle.findUnique({ where: { id: v1.id } });
   const e1free = await prisma.employee.findUnique({ where: { id: e1.id }, include: { vehicle: true } });
   check('Suppression d\'un vehicule affecte : vehicule supprime + employe libere', !v1gone && e1free && e1free.vehicle === null, 'incoherent');
+  // Supprimer un eleve supprime ses creneaux (onDelete: Cascade).
+  await a(`/students/${studentA.id}/delete`, { method: 'POST' });
+  const studentSlotGone = createdSlot ? await prisma.scheduleSlot.findUnique({ where: { id: createdSlot.id } }) : null;
+  check('Suppression d\'un eleve : ses creneaux supprimes (cascade)', !(await prisma.student.findUnique({ where: { id: studentA.id } })) && !studentSlotGone, 'cascade ko');
   await a(`/employees/${e1.id}/delete`, { method: 'POST' });
   check('Suppression d\'un employe', !(await prisma.employee.findUnique({ where: { id: e1.id } })), 'encore present');
 
