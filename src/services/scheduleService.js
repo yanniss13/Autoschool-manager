@@ -23,6 +23,20 @@ function findOwnedById(companyId, id) {
   });
 }
 
+// Creneaux chevauchant [rangeStart, rangeEnd) : commencent avant la fin de fenetre
+// ET finissent apres le debut de fenetre. Scope companyId pour l'isolation.
+function findByCompanyBetween(companyId, rangeStart, rangeEnd) {
+  return prisma.scheduleSlot.findMany({
+    where: {
+      companyId,
+      startsAt: { lt: rangeEnd },
+      endsAt: { gt: rangeStart },
+    },
+    include: slotInclude,
+    orderBy: { startsAt: 'asc' },
+  });
+}
+
 function createForCompany(companyId, data) {
   return prisma.scheduleSlot.create({
     data: { ...data, companyId },
@@ -52,6 +66,7 @@ function findAllForEmployee(employeeId) {
 module.exports = {
   findAllByCompany,
   findOwnedById,
+  findByCompanyBetween,
   createForCompany,
   updateOwned,
   deleteOwned,
