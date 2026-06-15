@@ -41,6 +41,9 @@ données d'une autre entreprise.
 - [x] CRUD complet des véhicules
 - [x] Affectation d'un véhicule à un employé **uniquement s'il n'est pas déjà référent d'un autre véhicule**
 - [x] Désaffectation d'un véhicule
+- [x] Planning simple : le gérant crée des créneaux pour ses employés
+- [x] Connexion employé (email + mot de passe) et espace employé en lecture seule
+- [x] Affichage automatique du véhicule affecté dans l'espace employé
 - [x] Compteurs du dashboard (employés, véhicules, véhicules affectés / disponibles)
 - [x] CSS propre et homogène sur toutes les pages
 
@@ -60,6 +63,8 @@ données d'une autre entreprise.
 - **Sécurité** : mots de passe hachés avec bcrypt, jamais stockés ni affichés en
   clair ; validation **systématiquement refaite côté serveur** ; pattern
   **Post/Redirect/Get** après chaque écriture.
+- **Planning simple** : les créneaux sont rattachés à un employé et à son
+  entreprise ; le véhicule affiché vient de l'affectation actuelle de l'employé.
 - **GET / POST uniquement** : les formulaires HTML natifs ne gèrent que ces deux
   verbes, cohérent avec un rendu serveur sans JavaScript.
 
@@ -89,19 +94,19 @@ Défense en profondeur adaptée à un rendu serveur :
 ```
 ProjetRH/
 ├── prisma/
-│   ├── schema.prisma          # Modèle Company / Employee / Vehicle
+│   ├── schema.prisma          # Modèle Company / Employee / Vehicle / ScheduleSlot
 │   ├── migrations/            # Migrations versionnées
 │   └── dev.db                 # Base SQLite (générée)
 ├── src/
 │   ├── app.js                 # Configuration Express (vues, session, routes)
 │   ├── server.js              # Point d'entrée HTTP
 │   ├── config/prisma.js       # Client Prisma (singleton)
-│   ├── middlewares/           # requireAuth, loadCompany, redirectIfAuth, flash
-│   ├── controllers/           # auth, dashboard, employee, vehicle
+│   ├── middlewares/           # auth gérant/employé, contexte courant, flash
+│   ├── controllers/           # auth, dashboard, employee, vehicle, planning
 │   ├── services/              # accès données (scopés par companyId)
 │   ├── validators/            # validation serveur
 │   ├── routes/                # routeurs + agrégation
-│   └── utils/password.js      # hash / compare bcrypt
+│   └── utils/                 # hash / compare bcrypt, helpers HTTP et dates
 ├── views/                     # templates Twig (layout, partials, pages)
 ├── public/css/style.css       # feuille de style unique
 ├── test/smoke.cjs             # test de bout en bout (npm test)
@@ -174,11 +179,12 @@ Il démarre un serveur dédié (port 3100, sans gêner `npm run dev`), effectue 
 vraies requêtes HTTP, vérifie certaines données en base via Prisma, puis
 **supprime ses propres données de test** (la base reste propre).
 
-Couverture (44 vérifications) :
+Couverture (52 vérifications) :
 - authentification & session (inscription, connexion, protection, déconnexion) ;
-- CRUD employés (validation, unicité de l'email, hachage du mot de passe) ;
+- CRUD employés (validation, unicité globale de l'email, hachage du mot de passe) ;
 - CRUD véhicules (normalisation et unicité de l'immatriculation) ;
 - affectation / désaffectation et règle « un seul véhicule par employé » ;
+- planning simple saisi par le gérant et espace employé en lecture seule, y compris les anciens créneaux ;
 - cloisonnement multi-entreprises (accès cross-tenant → 404) ;
 - sécurité & validations (rejet d'un POST sans jeton CSRF, bornes d'âge et d'année) ;
 - compteurs du dashboard et pages d'erreur 404 / 500.
@@ -203,9 +209,14 @@ Couverture (44 vérifications) :
    statut **Affecté** ; l'employé disparaît de la liste des employés affectables.
 6. **Règle métier** : tenter d'affecter le **même employé** à l'autre véhicule →
    refus avec message clair.
-7. **Dashboard** : revenir au tableau de bord → les compteurs reflètent l'état
+7. **Planning** : aller dans **Planning**, créer un créneau simple pour un employé
+   (titre, début, fin, note optionnelle).
+8. **Espace employé** : se connecter sur `/employee-login` avec l'email et le mot
+   de passe de l'employé → vérifier que le créneau et le véhicule affecté
+   s'affichent automatiquement.
+9. **Dashboard** : revenir au tableau de bord → les compteurs reflètent l'état
    (employés, véhicules, véhicules affectés / disponibles).
-8. **Cloisonnement** (optionnel) : ouvrir une seconde session (autre auto-école)
+10. **Cloisonnement** (optionnel) : ouvrir une seconde session (autre auto-école)
    et montrer qu'elle ne voit aucune donnée de la première.
 
 ## Notes pour la présentation orale (jury)
@@ -229,16 +240,16 @@ Couverture (44 vérifications) :
 
 ## Limites actuelles du MVP
 
-- Un seul rôle : le **gérant**. Les employés n'ont pas d'accès à l'application.
+- L'espace employé est volontairement en **lecture seule**.
 - Pas de réinitialisation de mot de passe ni de gestion fine des permissions.
+- Pas de gestion des élèves, lieux de départ/arrivée, examens ou leçons détaillées.
+- Pas de détection automatique des chevauchements de créneaux.
 - Pas de recherche, de tri avancé ni de pagination sur les listes.
 - SQLite est adapté au développement / à la démonstration, pas à une forte charge
   concurrente en production.
 
 ## Bonus V2 non réalisés (hors périmètre)
 
-- Connexion **employé** (email + mot de passe) et page profil personnelle.
-- Affichage du véhicule dont l'employé est référent sur sa page profil.
 - **Upload / modification d'avatar**.
 - Statut **« en maintenance »** d'un véhicule (immobilisé) avec indicateur visuel
   sur le dashboard du gérant.

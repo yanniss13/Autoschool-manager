@@ -27,10 +27,13 @@ const ROOT = path.join(__dirname, '..');
 const PORT = 3100;
 const BASE = `http://localhost:${PORT}`;
 
-// Donnees uniques par execution (evite tout conflit d'unicite SIRET / immatriculation).
+// Donnees uniques par execution (evite tout conflit d'unicite SIRET / email / immatriculation).
 const stamp = Date.now();
 const siretA = String(stamp).padStart(14, '0').slice(-14);
 const siretB = String(stamp + 1).padStart(14, '0').slice(-14);
+const emailA1 = `e1-${stamp}@test.com`;
+const emailA2 = `e2-${stamp}@test.com`;
+const emailB = `eb-${stamp}@test.com`;
 
 let pass = 0;
 let fail = 0;
@@ -171,21 +174,21 @@ async function runTests() {
   const companyA = await prisma.company.findUnique({ where: { siret: siretA } });
 
   section('CRUD EMPLOYÉS');
-  await addEmployee(a, 'e1@test.com');
-  await addEmployee(a, 'e2@test.com');
-  const e1 = await prisma.employee.findFirst({ where: { companyId: companyA.id, email: 'e1@test.com' } });
+  await addEmployee(a, emailA1);
+  await addEmployee(a, emailA2);
+  const e1 = await prisma.employee.findFirst({ where: { companyId: companyA.id, email: emailA1 } });
   check('Mot de passe employe hache (bcrypt)', e1.passwordHash.startsWith('$2'), 'hash invalide');
   r = await a('/employees');
-  check('Liste des employes affichee', r.status === 200 && /e1@test\.com/.test(r.text), `status=${r.status}`);
+  check('Liste des employes affichee', r.status === 200 && r.text.includes(emailA1), `status=${r.status}`);
   r = await a('/employees', { method: 'POST', body: { firstName: 'A', lastName: 'B', email: 'pas-un-email', password: 'secret12' } });
   check('Creation refusee si email invalide', r.status === 400 && /valide/i.test(r.text), `status=${r.status}`);
-  r = await a('/employees', { method: 'POST', body: { firstName: 'A', lastName: 'B', email: 'e1@test.com', password: 'secret12' } });
+  r = await a('/employees', { method: 'POST', body: { firstName: 'A', lastName: 'B', email: emailA1, password: 'secret12' } });
   check('Creation refusee si email deja utilise', r.status === 400 && /déjà utilisé/i.test(r.text), `status=${r.status}`);
   const hashBefore = e1.passwordHash;
-  await a(`/employees/${e1.id}/update`, { method: 'POST', body: { firstName: 'Jean', lastName: 'Modifie', email: 'e1@test.com', password: '' } });
+  await a(`/employees/${e1.id}/update`, { method: 'POST', body: { firstName: 'Jean', lastName: 'Modifie', email: emailA1, password: '' } });
   let e1b = await prisma.employee.findUnique({ where: { id: e1.id } });
   check('Edition sans mot de passe : hash inchange', e1b.passwordHash === hashBefore && e1b.lastName === 'Modifie', 'hash modifie ?');
-  await a(`/employees/${e1.id}/update`, { method: 'POST', body: { firstName: 'Jean', lastName: 'Modifie', email: 'e1@test.com', password: 'nouveau123' } });
+  await a(`/employees/${e1.id}/update`, { method: 'POST', body: { firstName: 'Jean', lastName: 'Modifie', email: emailA1, password: 'nouveau123' } });
   e1b = await prisma.employee.findUnique({ where: { id: e1.id } });
   check('Edition avec nouveau mot de passe : hash change', e1b.passwordHash !== hashBefore, 'hash non change');
 
@@ -220,6 +223,56 @@ async function runTests() {
   await a(`/vehicles/${v1.id}/assign`, { method: 'POST', body: { employeeId: String(e1.id) } });
   v1 = await prisma.vehicle.findUnique({ where: { id: v1.id } });
   check('Affectation d\'un employe disponible', v1.employeeId === e1.id, `employeeId=${v1.employeeId}`);
+
+  section('PLANNING & ESPACE EMPLOYE');
+  const slotStart = '2030-01-02T09:00';
+  const slotEnd = '2030-01-02T10:00';
+  r = await a('/planning', {
+    method: 'POST',
+    body: {
+      employeeId: String(e1.id),
+      title: 'Cours de conduite',
+      startsAt: slotStart,
+      endsAt: slotEnd,
+      note: 'Verifier les papiers du vehicule.',
+    },
+  });
+  check('Creation creneau par le gerant', r.status === 302 && r.location === '/planning', `status=${r.status}`);
+  r = await a('/planning', {
+    method: 'POST',
+    body: {
+      employeeId: String(e1.id),
+      title: 'Ancien creneau visible',
+      startsAt: '2020-01-02T09:00',
+      endsAt: '2020-01-02T10:00',
+      note: 'Doit rester visible dans l espace employe.',
+    },
+  });
+  check('Creation ancien creneau par le gerant', r.status === 302 && r.location === '/planning', `status=${r.status}`);
+  const createdSlot =
+    prisma.scheduleSlot &&
+    (await prisma.scheduleSlot.findFirst({
+      where: { companyId: companyA.id, employeeId: e1.id, title: 'Cours de conduite' },
+    }));
+  check('Creneau persiste en base', !!createdSlot, 'creneau introuvable');
+
+  const employeeClient = makeClient();
+  r = await employeeClient('/employee-login', { method: 'POST', body: { email: emailA1, password: 'nouveau123' } });
+  const employeeLoggedIn = r.status === 302 && r.location === '/employee-space';
+  check('Connexion employe par email + mot de passe', employeeLoggedIn, `status=${r.status}`);
+  r = await employeeClient('/employee-space');
+  check(
+    'Espace employe affiche planning, anciens creneaux et vehicule affecte',
+    employeeLoggedIn &&
+      r.status === 200 &&
+      /Cours de conduite/.test(r.text) &&
+      /Ancien creneau visible/.test(r.text) &&
+      r.text.includes(plate1),
+    `status=${r.status}`
+  );
+  r = await employeeClient('/dashboard');
+  check('Employe connecte refuse sur routes gerant', employeeLoggedIn && r.status === 302 && r.location === '/login', `status=${r.status}`);
+
   await a(`/vehicles/${v2.id}/assign`, { method: 'POST', body: { employeeId: String(e1.id) } });
   v2 = await prisma.vehicle.findUnique({ where: { id: v2.id } });
   check('Employe deja affecte non reaffectable ailleurs', v2.employeeId === null, `employeeId=${v2.employeeId}`);
@@ -230,8 +283,10 @@ async function runTests() {
   section('CLOISONNEMENT MULTI-ENTREPRISES');
   const b = makeClient();
   await regLogin(b, siretB, 'Auto-École Concurrente');
-  await addEmployee(b, 'eb@test.com');
-  const eb = await prisma.employee.findFirst({ where: { email: 'eb@test.com' } });
+  r = await b('/employees', { method: 'POST', body: { firstName: 'Copie', lastName: 'Email', email: emailA1, password: 'secret12' } });
+  check('Email employe refuse meme dans une autre entreprise', r.status === 400 && /utilis/i.test(r.text), `status=${r.status}`);
+  await addEmployee(b, emailB);
+  const eb = await prisma.employee.findFirst({ where: { email: emailB } });
   r = await b(`/employees/${e1.id}/edit`);
   check('Entreprise B ne peut pas editer un employe de A (404)', r.status === 404, `status=${r.status}`);
   r = await b(`/employees/${e1.id}/delete`, { method: 'POST' });
@@ -240,6 +295,8 @@ async function runTests() {
   check('Entreprise B ne peut pas editer un vehicule de A (404)', r.status === 404, `status=${r.status}`);
   r = await b(`/vehicles/${v1.id}/assign`, { method: 'POST', body: { employeeId: String(eb.id) } });
   check('Entreprise B ne peut pas affecter un vehicule de A (404)', r.status === 404, `status=${r.status}`);
+  r = createdSlot ? await b(`/planning/${createdSlot.id}/edit`) : { status: 500 };
+  check('Entreprise B ne peut pas editer un creneau de A (404)', r.status === 404, `status=${r.status}`);
 
   section('SUPPRESSIONS');
   await a(`/vehicles/${v1.id}/assign`, { method: 'POST', body: { employeeId: String(e1.id) } });

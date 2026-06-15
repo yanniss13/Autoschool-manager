@@ -1,6 +1,8 @@
 // Controleur d'authentification : inscription, connexion, deconnexion.
 const companyService = require('../services/companyService');
+const employeeService = require('../services/employeeService');
 const { validateRegister, validateLogin } = require('../validators/companyValidator');
+const { validateEmployeeLogin } = require('../validators/employeeAuthValidator');
 const password = require('../utils/password');
 
 // GET /register
@@ -91,9 +93,58 @@ async function login(req, res, next) {
     req.session.regenerate((err) => {
       if (err) return next(err);
       // On ne stocke que l'identifiant de la company connectee en session.
+      req.session.authRole = 'company';
       req.session.companyId = company.id;
+      req.session.employeeId = null;
       req.flash('success', 'Connexion réussie.');
       res.redirect('/dashboard');
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// GET /employee-login
+function showEmployeeLogin(req, res) {
+  res.render('auth/employee-login', {
+    title: 'Connexion employe',
+    errors: {},
+    values: {},
+  });
+}
+
+// POST /employee-login
+async function employeeLogin(req, res, next) {
+  try {
+    const { isValid, errors, value } = validateEmployeeLogin(req.body);
+
+    if (!isValid) {
+      return res.status(400).render('auth/employee-login', {
+        title: 'Connexion employe',
+        errors,
+        values: { email: req.body.email },
+      });
+    }
+
+    const employee = await employeeService.findByEmail(value.email);
+    const passwordOk =
+      employee && (await password.compare(value.password, employee.passwordHash));
+
+    if (!employee || !passwordOk) {
+      return res.status(401).render('auth/employee-login', {
+        title: 'Connexion employe',
+        errors: { global: 'Identifiants invalides' },
+        values: { email: req.body.email },
+      });
+    }
+
+    req.session.regenerate((err) => {
+      if (err) return next(err);
+      req.session.authRole = 'employee';
+      req.session.employeeId = employee.id;
+      req.session.companyId = null;
+      req.flash('success', 'Connexion employe reussie.');
+      res.redirect('/employee-space');
     });
   } catch (err) {
     next(err);
@@ -107,4 +158,20 @@ function logout(req, res) {
   });
 }
 
-module.exports = { showRegister, register, showLogin, login, logout };
+// POST /employee-logout
+function employeeLogout(req, res) {
+  req.session.destroy(() => {
+    res.redirect('/employee-login');
+  });
+}
+
+module.exports = {
+  showRegister,
+  register,
+  showLogin,
+  login,
+  showEmployeeLogin,
+  employeeLogin,
+  logout,
+  employeeLogout,
+};

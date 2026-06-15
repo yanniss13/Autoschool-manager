@@ -41,8 +41,8 @@ async function create(req, res, next) {
       });
     }
 
-    // Unicite de l'email dans l'entreprise (controle applicatif).
-    const existing = await employeeService.findByEmailInCompany(req.company.id, value.email);
+    // Unicite globale de l'email : necessaire pour la connexion employe sans SIRET.
+    const existing = await employeeService.findByEmail(value.email);
     if (existing) {
       return res.status(400).render('employees/new', {
         title: 'Nouvel employé',
@@ -119,8 +119,8 @@ async function update(req, res, next) {
       });
     }
 
-    // Unicite de l'email : autorise si c'est l'employe lui-meme.
-    const existing = await employeeService.findByEmailInCompany(req.company.id, value.email);
+    // Unicite globale de l'email : autorise si c'est l'employe lui-meme.
+    const existing = await employeeService.findByEmail(value.email);
     if (existing && existing.id !== id) {
       return res.status(400).render('employees/edit', {
         title: 'Modifier un employé',

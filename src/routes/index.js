@@ -6,8 +6,12 @@ const authRoutes = require('./authRoutes');
 const dashboardRoutes = require('./dashboardRoutes');
 const employeeRoutes = require('./employeeRoutes');
 const vehicleRoutes = require('./vehicleRoutes');
+const scheduleRoutes = require('./scheduleRoutes');
+const employeeSpaceRoutes = require('./employeeSpaceRoutes');
 const requireAuth = require('../middlewares/requireAuth');
 const loadCompany = require('../middlewares/loadCompany');
+const requireEmployeeAuth = require('../middlewares/requireEmployeeAuth');
+const loadEmployee = require('../middlewares/loadEmployee');
 
 const router = express.Router();
 
@@ -18,5 +22,9 @@ router.use('/', authRoutes);
 router.use('/dashboard', requireAuth, loadCompany, dashboardRoutes);
 router.use('/employees', requireAuth, loadCompany, employeeRoutes);
 router.use('/vehicles', requireAuth, loadCompany, vehicleRoutes);
+router.use('/planning', requireAuth, loadCompany, scheduleRoutes);
+
+// Espace employe en lecture seule.
+router.use('/employee-space', requireEmployeeAuth, loadEmployee, employeeSpaceRoutes);
 
 module.exports = router;

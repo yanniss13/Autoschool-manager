@@ -21,6 +21,22 @@ function findByEmailInCompany(companyId, email) {
   return prisma.employee.findFirst({ where: { companyId, email } });
 }
 
+// Recherche un employe par email globalement unique (connexion employe).
+function findByEmail(email) {
+  return prisma.employee.findUnique({
+    where: { email },
+    include: { company: true },
+  });
+}
+
+// Charge un employe connecte avec son entreprise et son vehicule affecte.
+function findByIdWithAccess(id) {
+  return prisma.employee.findUnique({
+    where: { id },
+    include: { company: true, vehicle: true },
+  });
+}
+
 // Cree un employe pour une entreprise.
 function createForCompany(companyId, data) {
   return prisma.employee.create({ data: { ...data, companyId } });
@@ -45,6 +61,8 @@ module.exports = {
   findAllByCompany,
   findOwnedById,
   findByEmailInCompany,
+  findByEmail,
+  findByIdWithAccess,
   createForCompany,
   updateOwned,
   deleteOwned,

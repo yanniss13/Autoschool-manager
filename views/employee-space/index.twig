@@ -1,0 +1,55 @@
+{% extends 'layouts/base.twig' %}
+
+{% block content %}
+  <section class="page-header">
+    <h1>Mon espace</h1>
+  </section>
+
+  <section class="summary-grid">
+    <article class="summary-card">
+      <h2>Profil</h2>
+      <p><strong>{{ employee.firstName }} {{ employee.lastName }}</strong></p>
+      <p class="muted">{{ employee.email }}</p>
+      <p class="muted">{{ employee.company.businessName }}</p>
+    </article>
+
+    <article class="summary-card">
+      <h2>Vehicule affecte</h2>
+      {% if employee.vehicle %}
+        <p><strong>{{ employee.vehicle.registrationNumber }}</strong></p>
+        <p class="muted">{{ employee.vehicle.brand }} {{ employee.vehicle.model }}</p>
+      {% else %}
+        <p class="muted">Aucun vehicule affecte pour le moment.</p>
+      {% endif %}
+    </article>
+  </section>
+
+  <section class="page-header">
+    <h2>Mes creneaux</h2>
+  </section>
+
+  {% if slots|length > 0 %}
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Creneau</th>
+          <th>Debut</th>
+          <th>Fin</th>
+          <th>Note</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for slot in slots %}
+          <tr>
+            <td><strong>{{ slot.title }}</strong></td>
+            <td>{{ slot.startsAtLabel }}</td>
+            <td>{{ slot.endsAtLabel }}</td>
+            <td>{{ slot.note|default('') }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="muted">Aucun creneau planifie.</p>
+  {% endif %}
+{% endblock %}

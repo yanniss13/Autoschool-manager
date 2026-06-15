@@ -4,7 +4,11 @@
 const TRANSMISSIONS = ['manual', 'automatic'];
 
 const YEAR_MIN = 1900;
-const YEAR_MAX = new Date().getFullYear() + 1; // tolere un millesime annonce pour l'an prochain.
+// Borne haute calculee a CHAQUE appel (et non au chargement du module) pour ne pas
+// se perimer apres le 1er janvier. Tolere un millesime annonce pour l'an prochain.
+function currentYearMax() {
+  return new Date().getFullYear() + 1;
+}
 
 // Plaque francaise SIV (compactee) : 2 lettres, 3 chiffres, 2 lettres.
 function isValidPlate(compact) {
@@ -43,8 +47,9 @@ function validateVehicle(body) {
   let year = null;
   if (yearRaw !== '') {
     const n = Number(yearRaw);
-    if (!Number.isInteger(n) || n < YEAR_MIN || n > YEAR_MAX) {
-      errors.year = `L'année doit être comprise entre ${YEAR_MIN} et ${YEAR_MAX}.`;
+    const yearMax = currentYearMax();
+    if (!Number.isInteger(n) || n < YEAR_MIN || n > yearMax) {
+      errors.year = `L'année doit être comprise entre ${YEAR_MIN} et ${yearMax}.`;
     } else {
       year = n;
     }
@@ -67,4 +72,4 @@ function validateVehicle(body) {
   };
 }
 
-module.exports = { validateVehicle, TRANSMISSIONS };
+module.exports = { validateVehicle, TRANSMISSIONS, YEAR_MIN, currentYearMax };

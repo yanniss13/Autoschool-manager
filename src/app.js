@@ -60,6 +60,9 @@ app.use(csrf);
 // --- Routes ---
 // Page d'accueil publique. Un gerant deja connecte est envoye au dashboard.
 app.get('/', (req, res) => {
+  if (req.session && req.session.authRole === 'employee' && req.session.employeeId) {
+    return res.redirect('/employee-space');
+  }
   if (req.session && req.session.companyId) return res.redirect('/dashboard');
   res.render('index', { title: 'Accueil' });
 });

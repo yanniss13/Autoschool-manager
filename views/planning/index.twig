@@ -1,0 +1,53 @@
+{% extends 'layouts/base.twig' %}
+
+{% block content %}
+  <section class="page-header">
+    <h1>Planning</h1>
+    <a href="/planning/new" class="btn btn-primary">+ Nouveau creneau</a>
+  </section>
+
+  {% if slots|length > 0 %}
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Creneau</th>
+          <th>Employe</th>
+          <th>Debut</th>
+          <th>Fin</th>
+          <th>Vehicule</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for slot in slots %}
+          <tr>
+            <td>
+              <strong>{{ slot.title }}</strong>
+              {% if slot.note %}<span class="table-note">{{ slot.note }}</span>{% endif %}
+            </td>
+            <td>{{ slot.employee.lastName }} {{ slot.employee.firstName }}</td>
+            <td>{{ slot.startsAtLabel }}</td>
+            <td>{{ slot.endsAtLabel }}</td>
+            <td>
+              {% if slot.employee.vehicle %}
+                {{ slot.employee.vehicle.registrationNumber }}
+              {% else %}
+                <span class="muted">Aucun vehicule</span>
+              {% endif %}
+            </td>
+            <td class="actions">
+              <a href="/planning/{{ slot.id }}/edit" class="btn btn-small">Modifier</a>
+              <form action="/planning/{{ slot.id }}/delete" method="post" class="inline-form"
+                    onsubmit="return confirm('Supprimer ce creneau ?');">
+                <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+                <button type="submit" class="btn btn-small btn-danger">Supprimer</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="muted">Aucun creneau planifie pour le moment.</p>
+  {% endif %}
+{% endblock %}

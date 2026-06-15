@@ -21,13 +21,14 @@ model Company {
 
   employees Employee[]
   vehicles  Vehicle[]
+  scheduleSlots ScheduleSlot[]
 }
 
 model Employee {
   id           Int     @id @default(autoincrement())
   firstName    String
   lastName     String
-  email        String
+  email        String  @unique
   passwordHash String
   age          Int?
   gender       String?
@@ -37,12 +38,10 @@ model Employee {
 
   // Cote "un" de la relation 1-1 : la cle etrangere est portee par Vehicle.
   vehicle Vehicle?
+  scheduleSlots ScheduleSlot[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  // Email unique au sein d'une meme entreprise (pas globalement).
-  @@unique([companyId, email])
 }
 
 model Vehicle {
@@ -63,4 +62,24 @@ model Vehicle {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model ScheduleSlot {
+  id       Int      @id @default(autoincrement())
+  title    String
+  startsAt DateTime
+  endsAt   DateTime
+  note     String?
+
+  companyId Int
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  employeeId Int
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId, startsAt])
+  @@index([employeeId, startsAt])
 }

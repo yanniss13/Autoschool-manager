@@ -1,0 +1,38 @@
+<input type="hidden" name="_csrf" value="{{ csrfToken }}">
+
+<div class="form-group">
+  <label for="employeeId">Employe</label>
+  <select id="employeeId" name="employeeId" required>
+    <option value="">Choisir un employe</option>
+    {% for employee in employees %}
+      <option value="{{ employee.id }}" {% if values.employeeId == employee.id %}selected{% endif %}>
+        {{ employee.lastName }} {{ employee.firstName }} - {{ employee.email }}
+      </option>
+    {% endfor %}
+  </select>
+  {% if errors.employeeId %}<p class="field-error">{{ errors.employeeId }}</p>{% endif %}
+</div>
+
+<div class="form-group">
+  <label for="title">Titre</label>
+  <input type="text" id="title" name="title" value="{{ values.title|default('') }}" maxlength="120" required>
+  {% if errors.title %}<p class="field-error">{{ errors.title }}</p>{% endif %}
+</div>
+
+<div class="form-group">
+  <label for="startsAt">Debut</label>
+  <input type="datetime-local" id="startsAt" name="startsAt" value="{{ values.startsAt|default('') }}" required>
+  {% if errors.startsAt %}<p class="field-error">{{ errors.startsAt }}</p>{% endif %}
+</div>
+
+<div class="form-group">
+  <label for="endsAt">Fin</label>
+  <input type="datetime-local" id="endsAt" name="endsAt" value="{{ values.endsAt|default('') }}" required>
+  {% if errors.endsAt %}<p class="field-error">{{ errors.endsAt }}</p>{% endif %}
+</div>
+
+<div class="form-group">
+  <label for="note">Note <span class="muted">(optionnel)</span></label>
+  <textarea id="note" name="note" maxlength="500" rows="4">{{ values.note|default('') }}</textarea>
+  {% if errors.note %}<p class="field-error">{{ errors.note }}</p>{% endif %}
+</div>

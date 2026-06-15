@@ -159,7 +159,18 @@ body {
   font: inherit;
 }
 
-.form-group input:focus {
+.form-group textarea {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font: inherit;
+  resize: vertical;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
   outline: none;
   border-color: var(--color-primary);
 }
@@ -274,6 +285,13 @@ body {
   align-items: center;
 }
 
+.table-note {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}
+
 /* --- Variantes de boutons --- */
 .btn-small {
   padding: 0.35rem 0.7rem;
@@ -361,6 +379,30 @@ body {
 .stat-label {
   color: var(--color-muted);
   font-size: 0.9rem;
+}
+
+/* --- Espace employe --- */
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.summary-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+}
+
+.summary-card h2 {
+  margin-top: 0;
+  font-size: 1rem;
+}
+
+.summary-card p {
+  margin: 0.35rem 0;
 }
 
 /* --- Accessibilite --- */
