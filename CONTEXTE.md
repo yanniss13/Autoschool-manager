@@ -110,29 +110,39 @@ sur **`/login`** (SIRET + mot de passe).
   qu'un créneau créé par le gérant disparaisse s'il n'est plus strictement futur.
 - Migration ajoutée : `20260615104500_add_schedule_slots_employee_space`.
 
-### Grille planning hebdomadaire (style Skello)
+### Planning : agenda hebdomadaire à axe horaire (07h–20h) — état actuel
 
-- Spec : `docs/superpowers/specs/2026-06-15-planning-grille-hebdo-design.md` ;
-  plan : `docs/superpowers/plans/2026-06-15-planning-grille-hebdo.md`.
-- `/planning` n'affiche plus une liste mais une **grille hebdomadaire** : lignes = employés,
-  colonnes = 7 jours (lundi→dimanche), créneaux en **blocs colorés** (`09:00 - 10:00` + durée),
-  **total par employé** (colonne droite) et **total par jour** (pied « Heures travaillées »).
-- Navigation semaine via `?week=YYYY-MM-DD` (flèches ‹ ›, défaut = semaine courante).
-- **Cellule vide cliquable** → `/planning/new?employeeId=&date=` (création pré-remplie 09:00–17:00) ;
-  **bloc cliquable** → `/planning/:id/edit`.
-- Sans migration ni nouveau champ. Nouveaux helpers `startOfWeek`/`addDays`/`toDateInput`/
-  `formatTime`/`formatDuration` dans `src/utils/dateFormat.js` ; service `findByCompanyBetween`
-  (créneaux chevauchant une fenêtre, scopé `companyId`) ; construction de la grille dans
-  `scheduleController.buildWeek`. Couleur stable par employé (`employee.id % 8` → `.slot-color-N`).
-- Rattachement d'un créneau au **jour de `startsAt`** (choix MVP pour les créneaux à cheval).
+- Spec : `docs/superpowers/specs/2026-06-15-planning-agenda-horaire-design.md`.
+- **Remplace** l'ancienne grille « employés × jours » (style Skello) par un **agenda** :
+  **heures en lignes** (07h→20h, 13 lignes), **jours en colonnes** (lundi→dimanche),
+  créneaux en **blocs positionnés** proportionnellement (top/hauteur ∝ heure/durée),
+  rognés à la plage visible. Couleur stable par employé (`id % 8` → `.slot-color-N`).
+- **Côté gérant** (`/planning`) : agenda d'**un employé** choisi via **menu déroulant**
+  (`?employeeId=X&week=YYYY-MM-DD`). Bloc cliquable → `/planning/:id/edit` ; clic sur une
+  zone horaire vide → `/planning/new?employeeId=&date=&hour=HH` (début à l'heure cliquée, +1h).
+- **Côté employé** (`/employee-space`) : même agenda, **lecture seule**, ses créneaux ;
+  navigation `?week=`. Les créneaux passés restent consultables en changeant de semaine
+  (plus de liste « tous créneaux » : on navigue).
+- Code : module partagé **`src/utils/planningGrid.js`** (`weekRange`, `buildAgenda`,
+  `hourLabels`, `colorIndexFor`, constantes `DAY_START_HOUR=7`/`DAY_END_HOUR=20`) ;
+  partial **`views/partials/planning-agenda.twig`** (paramètre `readonly`) inclus par les
+  deux vues ; service `findByEmployeeBetween` ; CSS `.agenda-*`. `buildWeek` + ses constantes
+  ont été **retirés** de `scheduleController` (déplacés/remplacés).
+- Sans migration. Rattachement d'un créneau au **jour de `startsAt`** ; créneaux qui se
+  chevauchent → superposés (pas de répartition côte-à-côte) — choix MVP.
+- ⚠️ Le sélecteur d'employé utilise `onchange="this.form.submit()"` (JS inline) — à nettoyer
+  avec la CSP stricte (cf. §9).
+
+> Historique : une première version « grille Skello » (spec/plan `…-planning-grille-hebdo…`)
+> a été livrée sur `main` puis remplacée par cet agenda. Les fichiers `dateFormat.js`
+> (helpers `startOfWeek`/`addDays`/`toDateInput`/`formatTime`/`formatDuration`) et le service
+> `findByCompanyBetween` restent utilisés/disponibles.
 
 ### État git
 
-- Travaux livrés sur la **branche locale `feature/planning-grille-hebdo`** (créée depuis `main`) :
-  commit baseline « Add V2 planning and employee space » + docs + grille (helpers, service,
-  controller, vue, CSS, smoke). **Aucun push** (règle projet).
-- `.vscode/` reste **non commité** (non versionné).
-- Statut : implémenté et vérifié par `npm test` → **61/61** ✅.
+- Agenda livré sur la **branche locale `feature/planning-agenda-horaire`** (depuis `main`).
+  **Aucun push** (règle projet). `.vscode/` non commité.
+- Statut : implémenté et vérifié par `npm test` → **62/62** ✅.
 
 ## 9. Pistes pour la suite
 
