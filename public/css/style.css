@@ -435,3 +435,38 @@ body {
     transition: none;
   }
 }
+
+/* ===== Grille planning (style Skello) ===== */
+.planning-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.planning-week-nav { display: flex; align-items: center; gap: 0.5rem; }
+.planning-week-label { font-weight: 600; }
+
+.planning-scroll { overflow-x: auto; }
+.planning-grid { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 0.85rem; }
+.planning-grid th, .planning-grid td { border: 1px solid #e5e7eb; padding: 4px; vertical-align: top; }
+.planning-grid thead th { text-align: center; background: #f9fafb; font-weight: 600; padding: 8px 4px; }
+.planning-weekday { display: block; font-size: 0.75rem; color: #6b7280; }
+.planning-daynum { display: block; font-size: 1rem; }
+.planning-corner, .planning-employee { width: 160px; text-align: left; background: #f9fafb; font-weight: 600; }
+.planning-total-col { width: 70px; text-align: center; font-weight: 600; background: #f9fafb; }
+.planning-cell { height: 56px; position: relative; }
+.planning-dayfoot { text-align: center; font-weight: 600; background: #f9fafb; }
+
+.slot { display: block; border-radius: 6px; padding: 4px 6px; margin-bottom: 4px; text-decoration: none; color: #1f2937; }
+.slot-time { display: block; font-weight: 600; }
+.slot-duration { display: block; font-size: 0.7rem; color: #4b5563; text-align: right; }
+
+/* Bouton "+" discret, visible au survol de la cellule. */
+.slot-add { position: absolute; top: 2px; right: 4px; opacity: 0; color: #9ca3af; text-decoration: none; font-weight: 700; line-height: 1; }
+.planning-cell:hover .slot-add { opacity: 1; }
+.slot-add:focus-visible { opacity: 1; }
+
+/* Palette pastel (8 teintes) alignee sur slot-color-N du controller. */
+.slot-color-0 { background: #dbeafe; }
+.slot-color-1 { background: #ede9fe; }
+.slot-color-2 { background: #dcfce7; }
+.slot-color-3 { background: #fed7aa; }
+.slot-color-4 { background: #fce7f3; }
+.slot-color-5 { background: #cffafe; }
+.slot-color-6 { background: #fef9c3; }
+.slot-color-7 { background: #e0f2fe; }
