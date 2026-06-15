@@ -21,12 +21,14 @@ function validateScheduleSlot(body) {
   const errors = {};
 
   const employeeId = parsePositiveInt(body.employeeId);
+  const studentId = parsePositiveInt(body.studentId);
   const title = (body.title || '').trim();
   const startsAt = parseDateTime(body.startsAt);
   const endsAt = parseDateTime(body.endsAt);
   const noteRaw = (body.note || '').trim();
 
   if (!employeeId) errors.employeeId = "L'employe est obligatoire.";
+  if (!studentId) errors.studentId = "L'eleve est obligatoire.";
 
   if (!title) {
     errors.title = 'Le titre est obligatoire.';
@@ -49,6 +51,7 @@ function validateScheduleSlot(body) {
     errors,
     value: {
       employeeId,
+      studentId,
       title,
       startsAt,
       endsAt,

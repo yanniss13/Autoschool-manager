@@ -6,6 +6,7 @@ const slotInclude = {
   employee: {
     include: { vehicle: true },
   },
+  student: true,
 };
 
 function findAllByCompany(companyId) {
@@ -71,6 +72,7 @@ function findByEmployeeBetween(employeeId, rangeStart, rangeEnd) {
       startsAt: { lt: rangeEnd },
       endsAt: { gt: rangeStart },
     },
+    include: { student: true },
     orderBy: { startsAt: 'asc' },
   });
 }

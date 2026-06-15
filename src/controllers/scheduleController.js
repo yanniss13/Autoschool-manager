@@ -1,16 +1,21 @@
 // Controleur CRUD des creneaux de planning.
 // Protege en amont par requireAuth + loadCompany.
 const employeeService = require('../services/employeeService');
+const studentService = require('../services/studentService');
 const scheduleService = require('../services/scheduleService');
 const { validateScheduleSlot } = require('../validators/scheduleValidator');
 const { parseId, notFound } = require('../utils/http');
 const { formatDateTime, toDateTimeLocal } = require('../utils/dateFormat');
 
 // Slot -> evenement FullCalendar (datetime local naif, sans fuseau : FC l'affiche tel quel).
+// Le titre inclut l'eleve rattache, ex. "Cours de conduite — Dupont Marie".
 function toEvent(slot) {
+  const title = slot.student
+    ? `${slot.title} — ${slot.student.lastName} ${slot.student.firstName}`
+    : slot.title;
   return {
     id: slot.id,
-    title: slot.title,
+    title,
     start: toDateTimeLocal(slot.startsAt),
     end: toDateTimeLocal(slot.endsAt),
   };
@@ -29,6 +34,7 @@ function decorateSlot(slot) {
 function valuesFromSlot(slot) {
   return {
     employeeId: String(slot.employeeId),
+    studentId: slot.studentId ? String(slot.studentId) : '',
     title: slot.title,
     startsAt: toDateTimeLocal(slot.startsAt),
     endsAt: toDateTimeLocal(slot.endsAt),
@@ -37,10 +43,14 @@ function valuesFromSlot(slot) {
 }
 
 async function renderForm(req, res, view, status, data) {
-  const employees = await employeeService.findAllByCompany(req.company.id);
+  const [employees, students] = await Promise.all([
+    employeeService.findAllByCompany(req.company.id),
+    studentService.findAllByCompany(req.company.id),
+  ]);
   return res.status(status).render(view, {
     ...data,
     employees,
+    students,
   });
 }
 
@@ -138,6 +148,8 @@ async function create(req, res, next) {
     if (isValid) {
       const employee = await employeeService.findOwnedById(req.company.id, value.employeeId);
       if (!employee) formErrors.employeeId = 'Employe introuvable.';
+      const student = await studentService.findOwnedById(req.company.id, value.studentId);
+      if (!student) formErrors.studentId = 'Eleve introuvable.';
     }
 
     if (Object.keys(formErrors).length > 0) {
@@ -191,6 +203,8 @@ async function update(req, res, next) {
     if (isValid) {
       const employee = await employeeService.findOwnedById(req.company.id, value.employeeId);
       if (!employee) formErrors.employeeId = 'Employe introuvable.';
+      const student = await studentService.findOwnedById(req.company.id, value.studentId);
+      if (!student) formErrors.studentId = 'Eleve introuvable.';
     }
 
     if (Object.keys(formErrors).length > 0) {

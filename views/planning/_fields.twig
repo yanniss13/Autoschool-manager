@@ -14,6 +14,20 @@
 </div>
 
 <div class="form-group">
+  <label for="studentId">Eleve</label>
+  <select id="studentId" name="studentId" required>
+    <option value="">Choisir un eleve</option>
+    {% for student in students %}
+      <option value="{{ student.id }}" {% if values.studentId == student.id %}selected{% endif %}>
+        {{ student.lastName }} {{ student.firstName }}{% if student.email %} - {{ student.email }}{% endif %}
+      </option>
+    {% endfor %}
+  </select>
+  {% if errors.studentId %}<p class="field-error">{{ errors.studentId }}</p>{% endif %}
+  {% if students|length == 0 %}<p class="muted">Aucun eleve. <a href="/students/new">Creez un eleve</a> d'abord.</p>{% endif %}
+</div>
+
+<div class="form-group">
   <label for="title">Titre</label>
   <input type="text" id="title" name="title" value="{{ values.title|default('') }}" maxlength="120" required>
   {% if errors.title %}<p class="field-error">{{ errors.title }}</p>{% endif %}

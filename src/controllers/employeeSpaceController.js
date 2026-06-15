@@ -23,7 +23,7 @@ async function events(req, res, next) {
     res.json(
       slots.map((s) => ({
         id: s.id,
-        title: s.title,
+        title: s.student ? `${s.title} — ${s.student.lastName} ${s.student.firstName}` : s.title,
         start: toDateTimeLocal(s.startsAt),
         end: toDateTimeLocal(s.endsAt),
       }))
