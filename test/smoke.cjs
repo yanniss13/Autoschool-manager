@@ -18,6 +18,7 @@ require('dotenv').config({ quiet: true });
 
 const { spawn } = require('child_process');
 const path = require('path');
+const dateFormat = require('../src/utils/dateFormat');
 
 const app = require('../src/app'); // pour valider le rendu des pages d'erreur
 const { PrismaClient } = require('@prisma/client');
@@ -150,6 +151,15 @@ async function waitForServer(timeoutMs = 15000) {
 
 async function runTests() {
   const a = makeClient();
+
+  section('HELPERS DATE & DURÉE (unitaire)');
+  check('formatDuration(480) = "8h"', dateFormat.formatDuration(480) === '8h', dateFormat.formatDuration(480));
+  check('formatDuration(210) = "3h30"', dateFormat.formatDuration(210) === '3h30', dateFormat.formatDuration(210));
+  check('formatDuration(0) = "0h"', dateFormat.formatDuration(0) === '0h', dateFormat.formatDuration(0));
+  // 2030-01-02 est un mercredi -> lundi de la semaine = 2029-12-31
+  check('startOfWeek(mercredi) = lundi', dateFormat.toDateInput(dateFormat.startOfWeek(new Date('2030-01-02T15:00'))) === '2029-12-31', dateFormat.toDateInput(dateFormat.startOfWeek(new Date('2030-01-02T15:00'))));
+  check('addDays(+7) avance d\'une semaine', dateFormat.toDateInput(dateFormat.addDays(new Date('2030-01-02T00:00'), 7)) === '2030-01-09', dateFormat.toDateInput(dateFormat.addDays(new Date('2030-01-02T00:00'), 7)));
+  check('formatTime(09:05) = "09:05"', dateFormat.formatTime(new Date('2030-01-02T09:05')) === '09:05', dateFormat.formatTime(new Date('2030-01-02T09:05')));
 
   section('AUTHENTIFICATION & SESSION');
   let r = await makeClient()('/dashboard');
