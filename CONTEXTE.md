@@ -138,11 +138,35 @@ sur **`/login`** (SIRET + mot de passe).
 > (helpers `startOfWeek`/`addDays`/`toDateInput`/`formatTime`/`formatDuration`) et le service
 > `findByCompanyBetween` restent utilisés/disponibles.
 
+### Variante en évaluation : FullCalendar (branche `feature/planning-fullcalendar`)
+
+> ⚠️ **`main` reste l'agenda maison** (point de retour : tag **`agenda-maison-v1`**).
+> Cette variante FullCalendar est une **branche non fusionnée**, à comparer puis garder ou jeter.
+
+- Remplace l'agenda maison par **FullCalendar** (`timeGridWeek`, 07h–20h, lundi, locale fr),
+  **auto-hébergé** dans `public/vendor/fullcalendar/` (offline). Script d'init partagé
+  `public/js/planning-calendar.js` (lit les `data-*` de `#calendar`). `base.twig` a un
+  `{% block scripts %}`.
+- **Gérant** (`/planning`) : sélecteur d'employé (recharge la page) ; FullCalendar charge les
+  créneaux via **`GET /planning/events?employeeId=&start=&end=`** (JSON, scopé entreprise,
+  employé vérifié). Clic créneau → édition ; sélection plage vide → `/planning/new?...&hour=` ;
+  **glisser-déposer / redimensionnement** → **`POST /planning/:id/move`** (urlencodé `_csrf` +
+  `start`/`end`, valide `start < end`, scopé entreprise).
+- **Employé** (`/employee-space`) : FullCalendar **lecture seule** via
+  **`GET /employee-space/events`** (ses créneaux).
+- Fichiers de l'agenda maison **retirés sur cette branche** : `src/utils/planningGrid.js`,
+  `views/partials/planning-agenda.twig` (toujours présents sur `main` / tag). Le CSS `.agenda-*`
+  subsiste mais est inutilisé ici.
+- `npm test` → **66/66** ✅ (le rendu JS de FullCalendar n'est pas testable par le smoke ;
+  on couvre le câblage : endpoints JSON, `move`, cloisonnement entreprise B → 404).
+- Décision en attente : **garder l'agenda maison (main) ou basculer sur FullCalendar**.
+
 ### État git
 
-- Agenda livré sur la **branche locale `feature/planning-agenda-horaire`** (depuis `main`).
-  **Aucun push** (règle projet). `.vscode/` non commité.
-- Statut : implémenté et vérifié par `npm test` → **62/62** ✅.
+- `main` = **agenda maison** à jour (`npm test` → 62/62 ✅), tag `agenda-maison-v1`.
+- Branche `feature/planning-fullcalendar` (depuis `main`) = variante FullCalendar (66/66 ✅),
+  **non fusionnée**. Branches `feature/planning-agenda-horaire` et `feature/planning-grille-hebdo`
+  conservées comme historique. **Aucun push** (règle projet). `.vscode/` non commité.
 
 ## 9. Pistes pour la suite
 
