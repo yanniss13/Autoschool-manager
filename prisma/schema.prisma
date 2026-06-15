@@ -21,6 +21,7 @@ model Company {
 
   employees Employee[]
   vehicles  Vehicle[]
+  students  Student[]
   scheduleSlots ScheduleSlot[]
 }
 
@@ -77,9 +78,32 @@ model ScheduleSlot {
   employeeId Int
   employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 
+  // Eleve rattache au creneau. Colonne nullable (compat. des creneaux existants) mais
+  // exigee par le validateur a la creation/edition. onDelete: Cascade -> supprimer un
+  // eleve supprime ses lecons.
+  studentId Int?
+  student   Student? @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([companyId, startsAt])
   @@index([employeeId, startsAt])
+  @@index([studentId, startsAt])
+}
+
+model Student {
+  id        Int     @id @default(autoincrement())
+  firstName String
+  lastName  String
+  email     String?
+  phone     String?
+
+  companyId Int
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  scheduleSlots ScheduleSlot[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
