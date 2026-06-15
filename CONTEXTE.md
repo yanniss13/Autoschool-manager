@@ -26,7 +26,7 @@ Détails fonctionnels et techniques complets : **`README.md`**.
 - **`main` est local en avance sur `origin/main` (commits NON poussés).**
 - ⚠️ **Règle absolue : aucun `push`, aucun changement de remote sans accord explicite.**
   Les commits **locaux** sont OK quand demandés.
-- **Smoke test : 76/76 ✅** (`npm test`).
+- **Smoke test : 79/79 ✅** (`npm test`).
 - Point de retour planning « agenda maison » : tag **`agenda-maison-v1`** (voir §4).
 
 ## 3. Fonctionnalités en place
@@ -84,8 +84,8 @@ Aucun bug bloquant connu. Trouvailles encore valables :
 
 1. **CSRF échec → rend `errors/csrf` avec statut 403** : OK pour l'UX (message « session
    expirée »), mais vérifier que tous les cas tombent bien sur cette page et pas sur 500.
-2. **`parseId` accepte hex/exponentiel/espaces** (`Number('1e3')`=1000) — `src/utils/http.js`.
-   Impact faible (cloisonnement `companyId`). Durcir : `/^\d+$/` avant `Number`.
+2. ✅ **Réglé** : `parseId` durci (`/^\d+$/`, rejette `1e3`/`0x10`/espaces) et endpoints
+   `events` validés via `parseDateRange` (400 sur dates invalides) — `src/utils/http.js`.
 3. **`YEAR_MAX` figé au chargement du module** — `src/validators/vehicleValidator.js`
    (borne périmée si le process tourne après le 1ᵉʳ janvier).
 4. **JS inline** : `onchange="this.form.submit()"` (sélecteur d'employé du planning) et
@@ -104,7 +104,7 @@ Repères :
 - `prisma/schema.prisma` : **Company / Employee / Vehicle / Student / ScheduleSlot**.
 - `src/app.js` (câblage), `src/routes/index.js` (montage des routeurs).
 - `public/vendor/fullcalendar/` (lib), `public/js/planning-calendar.js` (init agenda).
-- `test/smoke.cjs` (parcours complet de bout en bout, 76/76).
+- `test/smoke.cjs` (parcours complet de bout en bout, 79/79).
 
 ## 7. Conventions du projet
 
@@ -124,7 +124,7 @@ npm install
 # .env déjà présent (SESSION_SECRET requis) ; sinon : copier .env.example en .env
 npm run prisma:migrate   # base SQLite + client Prisma
 npm run dev              # ou npm start
-npm test                 # smoke test (doit afficher 76/76)
+npm test                 # smoke test (doit afficher 79/79)
 ```
 
 Pas de compte de démo pré-créé : créer une auto-école via **`/register`**, puis se connecter
@@ -132,7 +132,7 @@ sur **`/login`** (SIRET + mot de passe).
 
 ## 9. État git
 
-- `main` = **FullCalendar + module élève**, `npm test` → **76/76** ✅, propre (hors `.vscode/`).
+- `main` = **FullCalendar + module élève**, `npm test` → **79/79** ✅, propre (hors `.vscode/`).
 - Branches conservées comme historique / points de retour : `feature/planning-grille-hebdo`,
   `feature/planning-agenda-horaire` (+ tag `agenda-maison-v1`), `feature/planning-fullcalendar`,
   `feature/eleves` (toutes fusionnées dans `main`, supprimables sauf besoin de retour).
