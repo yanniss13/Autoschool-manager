@@ -1,28 +1,36 @@
-// Controleur de l'espace employe en lecture seule (agenda horaire).
+// Controleur de l'espace employe en lecture seule (calendrier FullCalendar).
 const scheduleService = require('../services/scheduleService');
-const planningGrid = require('../utils/planningGrid');
+const { toDateTimeLocal } = require('../utils/dateFormat');
 
-// GET /employee-space?week=YYYY-MM-DD
+// GET /employee-space
 async function index(req, res, next) {
   try {
-    const week = planningGrid.weekRange(req.query.week);
-    const slots = await scheduleService.findByEmployeeBetween(req.employee.id, week.start, week.end);
-    const days = planningGrid.buildAgenda(slots, week.start);
-
     res.render('employee-space/index', {
       title: 'Mon espace',
       employee: req.employee,
-      days,
-      colorIndex: planningGrid.colorIndexFor(req.employee.id),
-      hourLabels: planningGrid.hourLabels(),
-      readonly: true,
-      weekLabel: week.weekLabel,
-      prevUrl: `/employee-space?week=${week.prevWeek}`,
-      nextUrl: `/employee-space?week=${week.nextWeek}`,
     });
   } catch (err) {
     next(err);
   }
 }
 
-module.exports = { index };
+// GET /employee-space/events?start=&end=  (consomme par FullCalendar, lecture seule)
+async function events(req, res, next) {
+  try {
+    const start = req.query.start ? new Date(req.query.start) : new Date(0);
+    const end = req.query.end ? new Date(req.query.end) : new Date('2999-01-01');
+    const slots = await scheduleService.findByEmployeeBetween(req.employee.id, start, end);
+    res.json(
+      slots.map((s) => ({
+        id: s.id,
+        title: s.title,
+        start: toDateTimeLocal(s.startsAt),
+        end: toDateTimeLocal(s.endsAt),
+      }))
+    );
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { index, events };

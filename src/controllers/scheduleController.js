@@ -5,7 +5,16 @@ const scheduleService = require('../services/scheduleService');
 const { validateScheduleSlot } = require('../validators/scheduleValidator');
 const { parseId, notFound } = require('../utils/http');
 const { formatDateTime, toDateTimeLocal } = require('../utils/dateFormat');
-const planningGrid = require('../utils/planningGrid');
+
+// Slot -> evenement FullCalendar (datetime local naif, sans fuseau : FC l'affiche tel quel).
+function toEvent(slot) {
+  return {
+    id: slot.id,
+    title: slot.title,
+    start: toDateTimeLocal(slot.startsAt),
+    end: toDateTimeLocal(slot.endsAt),
+  };
+}
 
 function decorateSlot(slot) {
   return {
@@ -35,12 +44,11 @@ async function renderForm(req, res, view, status, data) {
   });
 }
 
-// GET /planning?employeeId=&week=YYYY-MM-DD
-// Agenda horaire d'un employe selectionne (defaut : le premier de l'entreprise).
+// GET /planning?employeeId=
+// Page FullCalendar : selecteur d'employe + conteneur calendrier (donnees via /planning/events).
 async function index(req, res, next) {
   try {
     const employees = await employeeService.findAllByCompany(req.company.id);
-    const week = planningGrid.weekRange(req.query.week);
 
     // Employe affiche : celui demande (verifie cote entreprise), sinon le premier.
     let selected = null;
@@ -48,27 +56,52 @@ async function index(req, res, next) {
     if (requestedId) selected = await employeeService.findOwnedById(req.company.id, requestedId);
     if (!selected && employees.length > 0) selected = employees[0];
 
-    let days = [];
-    if (selected) {
-      const slots = await scheduleService.findByEmployeeBetween(selected.id, week.start, week.end);
-      days = planningGrid.buildAgenda(slots, week.start);
-    }
-
-    const navSuffix = selected ? `employeeId=${selected.id}&` : '';
     res.render('planning/index', {
       title: 'Planning',
       employees,
       selected,
-      employeeId: selected ? selected.id : '',
-      colorIndex: selected ? planningGrid.colorIndexFor(selected.id) : 0,
-      days,
-      hourLabels: planningGrid.hourLabels(),
-      readonly: false,
-      weekInput: week.weekInput,
-      weekLabel: week.weekLabel,
-      prevUrl: `/planning?${navSuffix}week=${week.prevWeek}`,
-      nextUrl: `/planning?${navSuffix}week=${week.nextWeek}`,
     });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// GET /planning/events?employeeId=&start=&end=  (consomme par FullCalendar)
+async function events(req, res, next) {
+  try {
+    const employeeId = parseId(req.query.employeeId);
+    if (!employeeId) return res.json([]);
+
+    // Verifie que l'employe appartient bien a l'entreprise (cloisonnement -> 404 sinon).
+    const employee = await employeeService.findOwnedById(req.company.id, employeeId);
+    if (!employee) return notFound(res);
+
+    const start = req.query.start ? new Date(req.query.start) : new Date(0);
+    const end = req.query.end ? new Date(req.query.end) : new Date('2999-01-01');
+    const slots = await scheduleService.findByEmployeeBetween(employee.id, start, end);
+    res.json(slots.map(toEvent));
+  } catch (err) {
+    next(err);
+  }
+}
+
+// POST /planning/:id/move  (drag & drop : nouvelles heures, body urlencode + _csrf)
+async function move(req, res, next) {
+  try {
+    const id = parseId(req.params.id);
+    if (!id) return notFound(res);
+
+    const slot = await scheduleService.findOwnedById(req.company.id, id);
+    if (!slot) return notFound(res);
+
+    const start = new Date(req.body.start);
+    const end = new Date(req.body.end);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start >= end) {
+      return res.status(400).json({ error: 'Dates invalides.' });
+    }
+
+    await scheduleService.updateOwned(req.company.id, id, { startsAt: start, endsAt: end });
+    res.json({ ok: true });
   } catch (err) {
     next(err);
   }
@@ -194,4 +227,4 @@ async function destroy(req, res, next) {
   }
 }
 
-module.exports = { index, newForm, create, editForm, update, destroy };
+module.exports = { index, events, move, newForm, create, editForm, update, destroy };
