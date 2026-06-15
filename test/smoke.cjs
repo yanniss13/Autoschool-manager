@@ -266,27 +266,31 @@ async function runTests() {
     }));
   check('Creneau persiste en base', !!createdSlot, 'creneau introuvable');
 
-  // La grille hebdomadaire affiche le creneau dans la bonne semaine.
+  // L'agenda horaire gerant affiche le creneau de l'employe dans la bonne semaine.
   // slotStart = '2030-01-02T09:00' -> semaine du lundi 2029-12-31.
-  r = await a('/planning?week=2029-12-31');
-  check('Grille planning -> 200 avec en-tete', r.status === 200 && /Heures travaillées/.test(r.text), `status=${r.status}`);
-  check('Grille affiche le creneau (09:00 - 10:00)', /09:00 - 10:00/.test(r.text), 'horaire absent de la grille');
-  check('Grille propose la creation par cellule', /\/planning\/new\?employeeId=/.test(r.text), 'lien de creation absent');
+  r = await a(`/planning?employeeId=${e1.id}&week=2029-12-31`);
+  check('Agenda gerant -> 200 avec axe horaire', r.status === 200 && /07h/.test(r.text), `status=${r.status}`);
+  check('Agenda gerant affiche le creneau', /Cours de conduite/.test(r.text) && /09:00/.test(r.text), 'creneau absent de l agenda');
+  check('Agenda gerant propose la creation par creneau horaire', /\/planning\/new\?employeeId=/.test(r.text), 'lien de creation absent');
 
   const employeeClient = makeClient();
   r = await employeeClient('/employee-login', { method: 'POST', body: { email: emailA1, password: 'nouveau123' } });
   const employeeLoggedIn = r.status === 302 && r.location === '/employee-space';
   check('Connexion employe par email + mot de passe', employeeLoggedIn, `status=${r.status}`);
-  r = await employeeClient('/employee-space');
+  // Agenda employe (lecture seule) sur la semaine du creneau : creneau + vehicule affecte.
+  r = await employeeClient('/employee-space?week=2029-12-31');
   check(
-    'Espace employe affiche planning, anciens creneaux et vehicule affecte',
+    'Espace employe affiche son agenda et le vehicule affecte',
     employeeLoggedIn &&
       r.status === 200 &&
       /Cours de conduite/.test(r.text) &&
-      /Ancien creneau visible/.test(r.text) &&
+      /07h/.test(r.text) &&
       r.text.includes(plate1),
     `status=${r.status}`
   );
+  // Les creneaux passes restent consultables en naviguant : 2020-01-02 -> semaine du 2019-12-30.
+  r = await employeeClient('/employee-space?week=2019-12-30');
+  check('Espace employe : anciens creneaux consultables par navigation', /Ancien creneau visible/.test(r.text), 'ancien creneau introuvable');
   r = await employeeClient('/dashboard');
   check('Employe connecte refuse sur routes gerant', employeeLoggedIn && r.status === 302 && r.location === '/login', `status=${r.status}`);
 
