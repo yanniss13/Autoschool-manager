@@ -1,6 +1,7 @@
 // Controleur de l'espace employe en lecture seule (calendrier FullCalendar).
 const scheduleService = require('../services/scheduleService');
 const { toDateTimeLocal } = require('../utils/dateFormat');
+const { parseDateRange } = require('../utils/http');
 
 // GET /employee-space
 async function index(req, res, next) {
@@ -17,9 +18,10 @@ async function index(req, res, next) {
 // GET /employee-space/events?start=&end=  (consomme par FullCalendar, lecture seule)
 async function events(req, res, next) {
   try {
-    const start = req.query.start ? new Date(req.query.start) : new Date(0);
-    const end = req.query.end ? new Date(req.query.end) : new Date('2999-01-01');
-    const slots = await scheduleService.findByEmployeeBetween(req.employee.id, start, end);
+    const range = parseDateRange(req.query);
+    if (!range) return res.status(400).json({ error: 'Dates invalides.' });
+
+    const slots = await scheduleService.findByEmployeeBetween(req.employee.id, range.start, range.end);
     res.json(
       slots.map((s) => ({
         id: s.id,

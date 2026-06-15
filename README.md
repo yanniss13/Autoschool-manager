@@ -166,6 +166,11 @@ npm run prisma:generate
 npm run prisma:studio
 ```
 
+> Attention en migrant une base existante : la migration
+> `20260615104500_add_schedule_slots_employee_space` rend `Employee.email`
+> unique globalement pour permettre la connexion employé par email. Vérifier
+> l'absence de doublons d'email entre entreprises avant de l'appliquer.
+
 ## Tests
 
 Un test de bout en bout rejoue automatiquement tout le parcours du MVP et
@@ -179,12 +184,15 @@ Il démarre un serveur dédié (port 3100, sans gêner `npm run dev`), effectue 
 vraies requêtes HTTP, vérifie certaines données en base via Prisma, puis
 **supprime ses propres données de test** (la base reste propre).
 
-Couverture (52 vérifications) :
+Couverture (79 vérifications) :
+- helpers date / durée et HTTP (`parseId` refuse les identifiants ambigus comme `1e3`) ;
 - authentification & session (inscription, connexion, protection, déconnexion) ;
 - CRUD employés (validation, unicité globale de l'email, hachage du mot de passe) ;
 - CRUD véhicules (normalisation et unicité de l'immatriculation) ;
+- CRUD élèves et rattachement obligatoire d'un élève aux créneaux ;
 - affectation / désaffectation et règle « un seul véhicule par employé » ;
 - planning simple saisi par le gérant et espace employé en lecture seule, y compris les anciens créneaux ;
+- endpoints JSON FullCalendar (lecture, déplacement et rejet 400 des dates invalides) ;
 - cloisonnement multi-entreprises (accès cross-tenant → 404) ;
 - sécurité & validations (rejet d'un POST sans jeton CSRF, bornes d'âge et d'année) ;
 - compteurs du dashboard et pages d'erreur 404 / 500.

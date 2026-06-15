@@ -19,6 +19,7 @@ require('dotenv').config({ quiet: true });
 const { spawn } = require('child_process');
 const path = require('path');
 const dateFormat = require('../src/utils/dateFormat');
+const { parseId } = require('../src/utils/http');
 
 const app = require('../src/app'); // pour valider le rendu des pages d'erreur
 const { PrismaClient } = require('@prisma/client');
@@ -161,6 +162,13 @@ async function runTests() {
   check('addDays(+7) avance d\'une semaine', dateFormat.toDateInput(dateFormat.addDays(new Date('2030-01-02T00:00'), 7)) === '2030-01-09', dateFormat.toDateInput(dateFormat.addDays(new Date('2030-01-02T00:00'), 7)));
   check('formatTime(09:05) = "09:05"', dateFormat.formatTime(new Date('2030-01-02T09:05')) === '09:05', dateFormat.formatTime(new Date('2030-01-02T09:05')));
 
+  section('HELPERS HTTP (unitaire)');
+  check(
+    'parseId rejette les notations non decimales',
+    parseId('1e3') === null && parseId('0x10') === null && parseId(' 12 ') === null,
+    'notation acceptee a tort'
+  );
+
   section('AUTHENTIFICATION & SESSION');
   let r = await makeClient()('/dashboard');
   check('Dashboard protege sans session (-> /login)', r.status === 302 && r.location === '/login', `status=${r.status}`);
@@ -301,6 +309,8 @@ async function runTests() {
   // Endpoint JSON consomme par FullCalendar.
   r = await a(`/planning/events?employeeId=${e1.id}&start=2029-12-01&end=2030-02-01`);
   check('Events gerant -> JSON avec le creneau et l eleve', r.status === 200 && /Cours de conduite/.test(r.text) && /Dupont/.test(r.text) && /2030-01-02T09:00/.test(r.text), `status=${r.status}`);
+  r = await a(`/planning/events?employeeId=${e1.id}&start=pas-une-date&end=2030-02-01`);
+  check('Events gerant refuse une date invalide (400)', r.status === 400 && /Dates invalides/.test(r.text), `status=${r.status}`);
 
   // Drag & drop : un deplacement (nouvelles heures) persiste en base.
   r = await a(`/planning/${createdSlot.id}/move`, { method: 'POST', body: { start: '2030-01-02T11:00', end: '2030-01-02T12:30' } });
@@ -322,6 +332,8 @@ async function runTests() {
   );
   r = await employeeClient('/employee-space/events?start=2029-12-01&end=2030-02-01');
   check('Events employe -> JSON avec son creneau', r.status === 200 && /Cours de conduite/.test(r.text), `status=${r.status}`);
+  r = await employeeClient('/employee-space/events?start=pas-une-date&end=2030-02-01');
+  check('Events employe refuse une date invalide (400)', r.status === 400 && /Dates invalides/.test(r.text), `status=${r.status}`);
   r = await employeeClient('/dashboard');
   check('Employe connecte refuse sur routes gerant', employeeLoggedIn && r.status === 302 && r.location === '/login', `status=${r.status}`);
 

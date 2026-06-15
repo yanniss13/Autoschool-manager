@@ -4,7 +4,7 @@ const employeeService = require('../services/employeeService');
 const studentService = require('../services/studentService');
 const scheduleService = require('../services/scheduleService');
 const { validateScheduleSlot } = require('../validators/scheduleValidator');
-const { parseId, notFound } = require('../utils/http');
+const { parseId, parseDateRange, notFound } = require('../utils/http');
 const { formatDateTime, toDateTimeLocal } = require('../utils/dateFormat');
 
 // Slot -> evenement FullCalendar (datetime local naif, sans fuseau : FC l'affiche tel quel).
@@ -86,9 +86,10 @@ async function events(req, res, next) {
     const employee = await employeeService.findOwnedById(req.company.id, employeeId);
     if (!employee) return notFound(res);
 
-    const start = req.query.start ? new Date(req.query.start) : new Date(0);
-    const end = req.query.end ? new Date(req.query.end) : new Date('2999-01-01');
-    const slots = await scheduleService.findByEmployeeBetween(employee.id, start, end);
+    const range = parseDateRange(req.query);
+    if (!range) return res.status(400).json({ error: 'Dates invalides.' });
+
+    const slots = await scheduleService.findByEmployeeBetween(employee.id, range.start, range.end);
     res.json(slots.map(toEvent));
   } catch (err) {
     next(err);
