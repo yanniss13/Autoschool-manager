@@ -266,6 +266,13 @@ async function runTests() {
     }));
   check('Creneau persiste en base', !!createdSlot, 'creneau introuvable');
 
+  // La grille hebdomadaire affiche le creneau dans la bonne semaine.
+  // slotStart = '2030-01-02T09:00' -> semaine du lundi 2029-12-31.
+  r = await a('/planning?week=2029-12-31');
+  check('Grille planning -> 200 avec en-tete', r.status === 200 && /Heures travaillées/.test(r.text), `status=${r.status}`);
+  check('Grille affiche le creneau (09:00 - 10:00)', /09:00 - 10:00/.test(r.text), 'horaire absent de la grille');
+  check('Grille propose la creation par cellule', /\/planning\/new\?employeeId=/.test(r.text), 'lien de creation absent');
+
   const employeeClient = makeClient();
   r = await employeeClient('/employee-login', { method: 'POST', body: { email: emailA1, password: 'nouveau123' } });
   const employeeLoggedIn = r.status === 302 && r.location === '/employee-space';
