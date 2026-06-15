@@ -109,7 +109,30 @@ sur **`/login`** (SIRET + mot de passe).
 - Correctif UX : l'espace employé affiche tous ses créneaux, y compris ceux passés, pour éviter
   qu'un créneau créé par le gérant disparaisse s'il n'est plus strictement futur.
 - Migration ajoutée : `20260615104500_add_schedule_slots_employee_space`.
-- Statut : implémenté et vérifié par `npm test` → **52/52**. Aucun commit ni push effectué.
+
+### Grille planning hebdomadaire (style Skello)
+
+- Spec : `docs/superpowers/specs/2026-06-15-planning-grille-hebdo-design.md` ;
+  plan : `docs/superpowers/plans/2026-06-15-planning-grille-hebdo.md`.
+- `/planning` n'affiche plus une liste mais une **grille hebdomadaire** : lignes = employés,
+  colonnes = 7 jours (lundi→dimanche), créneaux en **blocs colorés** (`09:00 - 10:00` + durée),
+  **total par employé** (colonne droite) et **total par jour** (pied « Heures travaillées »).
+- Navigation semaine via `?week=YYYY-MM-DD` (flèches ‹ ›, défaut = semaine courante).
+- **Cellule vide cliquable** → `/planning/new?employeeId=&date=` (création pré-remplie 09:00–17:00) ;
+  **bloc cliquable** → `/planning/:id/edit`.
+- Sans migration ni nouveau champ. Nouveaux helpers `startOfWeek`/`addDays`/`toDateInput`/
+  `formatTime`/`formatDuration` dans `src/utils/dateFormat.js` ; service `findByCompanyBetween`
+  (créneaux chevauchant une fenêtre, scopé `companyId`) ; construction de la grille dans
+  `scheduleController.buildWeek`. Couleur stable par employé (`employee.id % 8` → `.slot-color-N`).
+- Rattachement d'un créneau au **jour de `startsAt`** (choix MVP pour les créneaux à cheval).
+
+### État git
+
+- Travaux livrés sur la **branche locale `feature/planning-grille-hebdo`** (créée depuis `main`) :
+  commit baseline « Add V2 planning and employee space » + docs + grille (helpers, service,
+  controller, vue, CSS, smoke). **Aucun push** (règle projet).
+- `.vscode/` reste **non commité** (non versionné).
+- Statut : implémenté et vérifié par `npm test` → **61/61** ✅.
 
 ## 9. Pistes pour la suite
 
