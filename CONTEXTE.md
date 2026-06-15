@@ -163,7 +163,7 @@ sur **`/login`** (SIRET + mot de passe).
 - ⚠️ Reste le `onchange="this.form.submit()"` inline du sélecteur d'employé — à nettoyer avec
   une CSP stricte (cf. §9).
 
-## 8 bis. Module Élève (branche `feature/eleves`)
+## 8 bis. Module Élève (fusionné dans `main`)
 
 - Nouveau modèle **`Student`** (scopé `companyId`) : `firstName`, `lastName` (requis),
   `email`, `phone` (optionnels). `Company.students[]`. **Migration**
@@ -184,11 +184,11 @@ sur **`/login`** (SIRET + mot de passe).
 
 ### État git
 
-- `main` = **FullCalendar** (version retenue), `npm test` → **66/66** ✅.
-- **Module élève en cours sur la branche `feature/eleves`** (depuis `main`, 76/76 ✅), non
-  fusionnée. Point de retour agenda maison : tag **`agenda-maison-v1`**.
-  Branches `feature/planning-agenda-horaire` / `feature/planning-grille-hebdo` conservées
-  comme historique. **Aucun push** (règle projet). `.vscode/` non commité.
+- `main` = **FullCalendar + module élève**, `npm test` → **76/76** ✅.
+- Point de retour agenda maison : tag **`agenda-maison-v1`**. Branches `feature/eleves`,
+  `feature/planning-fullcalendar`, `feature/planning-agenda-horaire`,
+  `feature/planning-grille-hebdo` conservées comme historique. **Aucun push** (règle projet).
+  `.vscode/` non commité.
 
 ## 9. Pistes pour la suite
 
