@@ -14,17 +14,30 @@
               </option>
             {% endfor %}
           </select>
-          <input type="hidden" name="week" value="{{ weekInput }}">
           <noscript><button type="submit" class="btn btn-small">Afficher</button></noscript>
         </form>
       {% endif %}
     </div>
-    <a href="/planning/new{% if selected %}?employeeId={{ selected.id }}{% endif %}" class="btn btn-primary">+ Nouveau creneau</a>
+    {% if selected %}
+      <a href="/planning/new?employeeId={{ selected.id }}" class="btn btn-primary">+ Nouveau creneau</a>
+    {% endif %}
   </section>
 
-  {% if employees|length > 0 %}
-    {% include 'partials/planning-agenda.twig' %}
+  {% if employees|length > 0 and selected %}
+    <p class="muted planning-hint">Glissez un créneau pour le déplacer, étirez-le pour changer sa durée, ou sélectionnez une plage vide pour en créer un.</p>
+    <div id="calendar"
+         data-events-url="/planning/events?employeeId={{ selected.id }}"
+         data-editable="true"
+         data-create-base="/planning/new?employeeId={{ selected.id }}"
+         data-move-url="/planning/__ID__/move"
+         data-csrf="{{ csrfToken }}"></div>
   {% else %}
     <p class="muted">Aucun employé. <a href="/employees/new">Créez un employé</a> pour commencer à planifier.</p>
   {% endif %}
+{% endblock %}
+
+{% block scripts %}
+  <script src="/vendor/fullcalendar/index.global.min.js"></script>
+  <script src="/vendor/fullcalendar/fr.global.min.js"></script>
+  <script src="/js/planning-calendar.js"></script>
 {% endblock %}

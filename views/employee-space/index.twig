@@ -28,5 +28,13 @@
     <h2>Mon planning</h2>
   </section>
 
-  {% include 'partials/planning-agenda.twig' %}
+  <div id="calendar"
+       data-events-url="/employee-space/events"
+       data-editable="false"></div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="/vendor/fullcalendar/index.global.min.js"></script>
+  <script src="/vendor/fullcalendar/fr.global.min.js"></script>
+  <script src="/js/planning-calendar.js"></script>
 {% endblock %}
