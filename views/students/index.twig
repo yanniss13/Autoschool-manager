@@ -1,0 +1,42 @@
+{% extends 'layouts/base.twig' %}
+
+{% block content %}
+  <section class="page-header">
+    <h1>Élèves</h1>
+    <a href="/students/new" class="btn btn-primary">+ Nouvel élève</a>
+  </section>
+
+  {% if students|length > 0 %}
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Nom</th>
+          <th>Prénom</th>
+          <th>Email</th>
+          <th>Téléphone</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in students %}
+          <tr>
+            <td>{{ s.lastName }}</td>
+            <td>{{ s.firstName }}</td>
+            <td>{{ s.email|default('—') }}</td>
+            <td>{{ s.phone|default('—') }}</td>
+            <td class="actions">
+              <a href="/students/{{ s.id }}/edit" class="btn btn-small">Modifier</a>
+              <form action="/students/{{ s.id }}/delete" method="post" class="inline-form"
+                    onsubmit="return confirm('Supprimer cet élève ? Ses créneaux seront aussi supprimés.');">
+                <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+                <button type="submit" class="btn btn-small btn-danger">Supprimer</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="muted">Aucun élève pour le moment.</p>
+  {% endif %}
+{% endblock %}

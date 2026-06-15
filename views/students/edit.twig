@@ -1,0 +1,14 @@
+{% extends 'layouts/base.twig' %}
+
+{% block content %}
+  <section class="form-card">
+    <h1>Modifier un élève</h1>
+
+    <form action="/students/{{ student.id }}/update" method="post" novalidate>
+      {% include 'students/_fields.twig' %}
+      <button type="submit" class="btn btn-primary">Enregistrer</button>
+    </form>
+
+    <p class="form-footer"><a href="/students">Retour à la liste</a></p>
+  </section>
+{% endblock %}
