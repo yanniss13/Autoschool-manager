@@ -25,31 +25,8 @@
   </section>
 
   <section class="page-header">
-    <h2>Mes creneaux</h2>
+    <h2>Mon planning</h2>
   </section>
 
-  {% if slots|length > 0 %}
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th>Creneau</th>
-          <th>Debut</th>
-          <th>Fin</th>
-          <th>Note</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for slot in slots %}
-          <tr>
-            <td><strong>{{ slot.title }}</strong></td>
-            <td>{{ slot.startsAtLabel }}</td>
-            <td>{{ slot.endsAtLabel }}</td>
-            <td>{{ slot.note|default('') }}</td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  {% else %}
-    <p class="muted">Aucun creneau planifie.</p>
-  {% endif %}
+  {% include 'partials/planning-agenda.twig' %}
 {% endblock %}

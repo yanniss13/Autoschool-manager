@@ -4,82 +4,8 @@ const employeeService = require('../services/employeeService');
 const scheduleService = require('../services/scheduleService');
 const { validateScheduleSlot } = require('../validators/scheduleValidator');
 const { parseId, notFound } = require('../utils/http');
-const {
-  formatDateTime,
-  toDateTimeLocal,
-  startOfWeek,
-  addDays,
-  toDateInput,
-  formatTime,
-  formatDuration,
-} = require('../utils/dateFormat');
-
-// Palette pastel : la classe CSS slot-color-N est definie dans public/css/style.css.
-const PALETTE_SIZE = 8;
-const WEEKDAYS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
-const MONTHS = ['janv.', 'févr.', 'mars', 'avril', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
-
-function slotMinutes(slot) {
-  return Math.max(0, Math.round((slot.endsAt - slot.startsAt) / 60000));
-}
-
-// Parse ?week=YYYY-MM-DD en date locale ; defaut = aujourd'hui. Renvoie le lundi 00:00.
-function resolveWeekStart(weekParam) {
-  if (typeof weekParam === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(weekParam)) {
-    const [y, m, d] = weekParam.split('-').map(Number);
-    return startOfWeek(new Date(y, m - 1, d));
-  }
-  return startOfWeek(new Date());
-}
-
-// Construit la structure de grille rendue par la vue.
-function buildWeek(employees, slots, weekStart) {
-  const days = [];
-  for (let i = 0; i < 7; i += 1) {
-    const date = addDays(weekStart, i);
-    days.push({
-      dateInput: toDateInput(date),
-      weekday: WEEKDAYS[i],
-      label: `${date.getDate()} ${MONTHS[date.getMonth()]}`,
-    });
-  }
-
-  const dayTotals = new Array(7).fill(0); // minutes cumulees par colonne (jour)
-
-  const rows = employees.map((employee) => {
-    let weekTotal = 0;
-    const cells = days.map((day, dayIndex) => {
-      const blocks = slots
-        .filter((s) => s.employeeId === employee.id && toDateInput(s.startsAt) === day.dateInput)
-        .map((s) => {
-          const minutes = slotMinutes(s);
-          weekTotal += minutes;
-          dayTotals[dayIndex] += minutes;
-          return {
-            id: s.id,
-            startLabel: formatTime(s.startsAt),
-            endLabel: formatTime(s.endsAt),
-            durationLabel: formatDuration(minutes),
-            title: s.title,
-          };
-        });
-      return { dateInput: day.dateInput, blocks };
-    });
-
-    return {
-      employee,
-      colorIndex: employee.id % PALETTE_SIZE,
-      cells,
-      weekTotalLabel: formatDuration(weekTotal),
-    };
-  });
-
-  return {
-    days,
-    rows,
-    dayTotalLabels: dayTotals.map((m) => formatDuration(m)),
-  };
-}
+const { formatDateTime, toDateTimeLocal } = require('../utils/dateFormat');
+const planningGrid = require('../utils/planningGrid');
 
 function decorateSlot(slot) {
   return {
@@ -109,40 +35,56 @@ async function renderForm(req, res, view, status, data) {
   });
 }
 
-// GET /planning?week=YYYY-MM-DD
+// GET /planning?employeeId=&week=YYYY-MM-DD
+// Agenda horaire d'un employe selectionne (defaut : le premier de l'entreprise).
 async function index(req, res, next) {
   try {
-    const weekStart = resolveWeekStart(req.query.week);
-    const weekEnd = addDays(weekStart, 7);
     const employees = await employeeService.findAllByCompany(req.company.id);
-    const slots = await scheduleService.findByCompanyBetween(req.company.id, weekStart, weekEnd);
+    const week = planningGrid.weekRange(req.query.week);
 
-    const grid = buildWeek(employees, slots, weekStart);
-    const lastDay = addDays(weekStart, 6);
+    // Employe affiche : celui demande (verifie cote entreprise), sinon le premier.
+    let selected = null;
+    const requestedId = parseId(req.query.employeeId);
+    if (requestedId) selected = await employeeService.findOwnedById(req.company.id, requestedId);
+    if (!selected && employees.length > 0) selected = employees[0];
 
+    let days = [];
+    if (selected) {
+      const slots = await scheduleService.findByEmployeeBetween(selected.id, week.start, week.end);
+      days = planningGrid.buildAgenda(slots, week.start);
+    }
+
+    const navSuffix = selected ? `employeeId=${selected.id}&` : '';
     res.render('planning/index', {
       title: 'Planning',
-      days: grid.days,
-      rows: grid.rows,
-      dayTotalLabels: grid.dayTotalLabels,
-      weekLabel: `${weekStart.getDate()} ${MONTHS[weekStart.getMonth()]} – ${lastDay.getDate()} ${MONTHS[lastDay.getMonth()]} ${lastDay.getFullYear()}`,
-      prevWeek: toDateInput(addDays(weekStart, -7)),
-      nextWeek: toDateInput(addDays(weekStart, 7)),
+      employees,
+      selected,
+      employeeId: selected ? selected.id : '',
+      colorIndex: selected ? planningGrid.colorIndexFor(selected.id) : 0,
+      days,
+      hourLabels: planningGrid.hourLabels(),
+      readonly: false,
+      weekInput: week.weekInput,
+      weekLabel: week.weekLabel,
+      prevUrl: `/planning?${navSuffix}week=${week.prevWeek}`,
+      nextUrl: `/planning?${navSuffix}week=${week.nextWeek}`,
     });
   } catch (err) {
     next(err);
   }
 }
 
-// GET /planning/new?employeeId=&date=
+// GET /planning/new?employeeId=&date=&hour=
 async function newForm(req, res, next) {
   try {
     const values = {};
-    const { employeeId, date } = req.query;
+    const { employeeId, date, hour } = req.query;
     if (employeeId) values.employeeId = String(employeeId);
     if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      values.startsAt = `${date}T09:00`;
-      values.endsAt = `${date}T17:00`;
+      const startHour = /^\d{1,2}$/.test(hour) && Number(hour) >= 0 && Number(hour) <= 22 ? Number(hour) : 9;
+      const endHour = startHour + 1;
+      values.startsAt = `${date}T${String(startHour).padStart(2, '0')}:00`;
+      values.endsAt = `${date}T${String(endHour).padStart(2, '0')}:00`;
     }
     await renderForm(req, res, 'planning/new', 200, {
       title: 'Nouveau creneau',

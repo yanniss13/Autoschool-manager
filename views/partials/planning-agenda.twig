@@ -1,0 +1,61 @@
+{# Agenda hebdomadaire a axe horaire. Contexte attendu :
+   days, hourLabels, colorIndex, readonly, prevUrl, nextUrl, weekLabel,
+   et employeeId si non readonly (liens de creation). #}
+<div class="agenda">
+  <div class="agenda-week-nav">
+    <a href="{{ prevUrl }}" class="btn btn-small" aria-label="Semaine précédente">‹</a>
+    <span class="planning-week-label">{{ weekLabel }}</span>
+    <a href="{{ nextUrl }}" class="btn btn-small" aria-label="Semaine suivante">›</a>
+  </div>
+
+  <div class="agenda-scroll">
+    <div class="agenda-grid">
+      <div class="agenda-corner"></div>
+      {% for day in days %}
+        <div class="agenda-day-head">
+          <span class="planning-weekday">{{ day.weekday }}</span>
+          <span class="planning-daynum">{{ day.label }}</span>
+        </div>
+      {% endfor %}
+
+      <div class="agenda-hours">
+        {% for label in hourLabels %}
+          <div class="agenda-hour-label">{{ label }}</div>
+        {% endfor %}
+      </div>
+
+      {% for day in days %}
+        <div class="agenda-day-body">
+          {% for label in hourLabels %}
+            {% if readonly %}
+              <div class="agenda-hour-cell"></div>
+            {% else %}
+              <a class="agenda-hour-cell agenda-hour-cell--add"
+                 href="/planning/new?employeeId={{ employeeId }}&date={{ day.dateInput }}&hour={{ 6 + loop.index }}"
+                 aria-label="Ajouter un créneau à {{ label }}"></a>
+            {% endif %}
+          {% endfor %}
+
+          {% for block in day.blocks %}
+            {% if readonly %}
+              <div class="agenda-block slot-color-{{ colorIndex }}"
+                   style="top: {{ block.topPct }}%; height: {{ block.heightPct }}%;"
+                   title="{{ block.title }} ({{ block.durationLabel }})">
+                <span class="agenda-block-time">{{ block.startLabel }}–{{ block.endLabel }}</span>
+                <span class="agenda-block-title">{{ block.title }}</span>
+              </div>
+            {% else %}
+              <a class="agenda-block slot-color-{{ colorIndex }}"
+                 href="/planning/{{ block.id }}/edit"
+                 style="top: {{ block.topPct }}%; height: {{ block.heightPct }}%;"
+                 title="{{ block.title }} ({{ block.durationLabel }})">
+                <span class="agenda-block-time">{{ block.startLabel }}–{{ block.endLabel }}</span>
+                <span class="agenda-block-title">{{ block.title }}</span>
+              </a>
+            {% endif %}
+          {% endfor %}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>

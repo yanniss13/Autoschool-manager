@@ -2,56 +2,28 @@
 
 {% block content %}
   <section class="page-header planning-header">
-    <div class="planning-week-nav">
-      <a href="/planning?week={{ prevWeek }}" class="btn btn-small" aria-label="Semaine précédente">‹</a>
-      <span class="planning-week-label">{{ weekLabel }}</span>
-      <a href="/planning?week={{ nextWeek }}" class="btn btn-small" aria-label="Semaine suivante">›</a>
+    <div class="planning-toolbar">
+      <h1>Planning</h1>
+      {% if employees|length > 0 %}
+        <form method="get" action="/planning" class="agenda-employee-picker">
+          <label for="employeeId">Employé</label>
+          <select id="employeeId" name="employeeId" onchange="this.form.submit()">
+            {% for emp in employees %}
+              <option value="{{ emp.id }}" {% if selected and selected.id == emp.id %}selected{% endif %}>
+                {{ emp.lastName }} {{ emp.firstName }}
+              </option>
+            {% endfor %}
+          </select>
+          <input type="hidden" name="week" value="{{ weekInput }}">
+          <noscript><button type="submit" class="btn btn-small">Afficher</button></noscript>
+        </form>
+      {% endif %}
     </div>
-    <a href="/planning/new" class="btn btn-primary">+ Nouveau creneau</a>
+    <a href="/planning/new{% if selected %}?employeeId={{ selected.id }}{% endif %}" class="btn btn-primary">+ Nouveau creneau</a>
   </section>
 
-  {% if rows|length > 0 %}
-    <div class="planning-scroll">
-      <table class="planning-grid">
-        <thead>
-          <tr>
-            <th class="planning-corner">Employé</th>
-            {% for day in days %}
-              <th><span class="planning-weekday">{{ day.weekday }}</span><span class="planning-daynum">{{ day.label }}</span></th>
-            {% endfor %}
-            <th class="planning-total-col">Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for row in rows %}
-            <tr>
-              <th class="planning-employee">{{ row.employee.lastName }} {{ row.employee.firstName }}</th>
-              {% for cell in row.cells %}
-                <td class="planning-cell">
-                  {% for block in cell.blocks %}
-                    <a class="slot slot-color-{{ row.colorIndex }}" href="/planning/{{ block.id }}/edit" title="{{ block.title }}">
-                      <span class="slot-time">{{ block.startLabel }} - {{ block.endLabel }}</span>
-                      <span class="slot-duration">{{ block.durationLabel }}</span>
-                    </a>
-                  {% endfor %}
-                  <a class="slot-add" href="/planning/new?employeeId={{ row.employee.id }}&date={{ cell.dateInput }}" aria-label="Ajouter un créneau">+</a>
-                </td>
-              {% endfor %}
-              <td class="planning-cell planning-total-col">{{ row.weekTotalLabel }}</td>
-            </tr>
-          {% endfor %}
-        </tbody>
-        <tfoot>
-          <tr>
-            <th class="planning-employee">Heures travaillées</th>
-            {% for label in dayTotalLabels %}
-              <td class="planning-cell planning-dayfoot">{{ label }}</td>
-            {% endfor %}
-            <td class="planning-cell planning-total-col"></td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
+  {% if employees|length > 0 %}
+    {% include 'partials/planning-agenda.twig' %}
   {% else %}
     <p class="muted">Aucun employé. <a href="/employees/new">Créez un employé</a> pour commencer à planifier.</p>
   {% endif %}
