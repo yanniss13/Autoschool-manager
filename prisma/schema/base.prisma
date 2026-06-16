@@ -1,0 +1,11 @@
+// Schema de donnees AutoSchool Manager
+// Genere le client Prisma utilise dans src/config/prisma.js
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}

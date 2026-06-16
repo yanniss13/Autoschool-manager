@@ -17,10 +17,20 @@
         <input type="hidden" name="_csrf" value="{{ csrfToken }}">
         <button type="submit" class="link-button">Deconnexion</button>
       </form>
+    {% elseif currentStudent %}
+      <a href="/student-space">Mon espace eleve</a>
+      <form action="/student-logout" method="post" class="inline-form">
+        <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+        <button type="submit" class="link-button">Deconnexion</button>
+      </form>
     {% else %}
       <a href="/login">Connexion gerant</a>
       <a href="/employee-login">Connexion employe</a>
+      <a href="/student-login">Connexion eleve</a>
       <a href="/register">Inscription</a>
     {% endif %}
+    <button type="button" id="theme-toggle" class="theme-toggle"
+            title="Theme clair / sombre"
+            aria-label="Basculer entre le theme clair et le theme sombre"></button>
   </nav>
 </header>

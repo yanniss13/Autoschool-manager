@@ -7,9 +7,9 @@
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "test": "node test/smoke.cjs",
-    "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
-    "prisma:studio": "prisma studio"
+    "prisma:generate": "prisma generate --schema prisma/schema",
+    "prisma:migrate": "prisma migrate dev --schema prisma/schema",
+    "prisma:studio": "prisma studio --schema prisma/schema"
   },
   "engines": {
     "node": ">=18"

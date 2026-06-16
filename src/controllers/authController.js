@@ -1,8 +1,10 @@
 // Controleur d'authentification : inscription, connexion, deconnexion.
 const companyService = require('../services/companyService');
 const employeeService = require('../services/employeeService');
+const studentService = require('../services/studentService');
 const { validateRegister, validateLogin } = require('../validators/companyValidator');
 const { validateEmployeeLogin } = require('../validators/employeeAuthValidator');
+const { validateStudentLogin } = require('../validators/studentAuthValidator');
 const password = require('../utils/password');
 
 // GET /register
@@ -96,6 +98,7 @@ async function login(req, res, next) {
       req.session.authRole = 'company';
       req.session.companyId = company.id;
       req.session.employeeId = null;
+      req.session.studentId = null;
       req.flash('success', 'Connexion réussie.');
       res.redirect('/dashboard');
     });
@@ -108,6 +111,15 @@ async function login(req, res, next) {
 function showEmployeeLogin(req, res) {
   res.render('auth/employee-login', {
     title: 'Connexion employe',
+    errors: {},
+    values: {},
+  });
+}
+
+// GET /student-login
+function showStudentLogin(req, res) {
+  res.render('auth/student-login', {
+    title: 'Connexion eleve',
     errors: {},
     values: {},
   });
@@ -143,8 +155,48 @@ async function employeeLogin(req, res, next) {
       req.session.authRole = 'employee';
       req.session.employeeId = employee.id;
       req.session.companyId = null;
+      req.session.studentId = null;
       req.flash('success', 'Connexion employe reussie.');
       res.redirect('/employee-space');
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// POST /student-login
+async function studentLogin(req, res, next) {
+  try {
+    const { isValid, errors, value } = validateStudentLogin(req.body);
+
+    if (!isValid) {
+      return res.status(400).render('auth/student-login', {
+        title: 'Connexion eleve',
+        errors,
+        values: { email: req.body.email },
+      });
+    }
+
+    const student = await studentService.findByEmail(value.email);
+    const passwordOk =
+      student && student.passwordHash && (await password.compare(value.password, student.passwordHash));
+
+    if (!student || !passwordOk) {
+      return res.status(401).render('auth/student-login', {
+        title: 'Connexion eleve',
+        errors: { global: 'Identifiants invalides' },
+        values: { email: req.body.email },
+      });
+    }
+
+    req.session.regenerate((err) => {
+      if (err) return next(err);
+      req.session.authRole = 'student';
+      req.session.studentId = student.id;
+      req.session.employeeId = null;
+      req.session.companyId = null;
+      req.flash('success', 'Connexion eleve reussie.');
+      res.redirect('/student-space');
     });
   } catch (err) {
     next(err);
@@ -165,6 +217,13 @@ function employeeLogout(req, res) {
   });
 }
 
+// POST /student-logout
+function studentLogout(req, res) {
+  req.session.destroy(() => {
+    res.redirect('/student-login');
+  });
+}
+
 module.exports = {
   showRegister,
   register,
@@ -172,6 +231,9 @@ module.exports = {
   login,
   showEmployeeLogin,
   employeeLogin,
+  showStudentLogin,
+  studentLogin,
   logout,
   employeeLogout,
+  studentLogout,
 };

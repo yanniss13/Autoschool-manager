@@ -1,0 +1,19 @@
+model RoadCodeTrainingSession {
+  id        Int    @id @default(autoincrement())
+  theme     String
+  score     Int
+  total     Int
+
+  companyId Int
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  studentId Int
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId, createdAt])
+  @@index([studentId, createdAt])
+  @@index([studentId, theme])
+}

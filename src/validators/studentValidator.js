@@ -3,6 +3,8 @@
 
 const NAME_MAX = 100;
 const PHONE_MAX = 20;
+const PASSWORD_MIN = 8;
+const PASSWORD_MAX = 72; // limite bcrypt (octets) : evite toute troncature silencieuse.
 
 function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -14,13 +16,15 @@ function isValidPhone(phone) {
 }
 
 // Retourne { isValid, errors, value } avec une value normalisee.
-function validateStudent(body) {
+// options.isCreate : true => le mot de passe est obligatoire.
+function validateStudent(body, { isCreate } = { isCreate: false }) {
   const errors = {};
 
   const firstName = (body.firstName || '').trim();
   const lastName = (body.lastName || '').trim();
   const email = (body.email || '').trim().toLowerCase();
   const phone = (body.phone || '').trim();
+  const password = body.password || '';
 
   if (!firstName) errors.firstName = 'Le prénom est obligatoire.';
   else if (firstName.length > NAME_MAX) errors.firstName = `Le prénom ne doit pas dépasser ${NAME_MAX} caractères.`;
@@ -28,9 +32,21 @@ function validateStudent(body) {
   if (!lastName) errors.lastName = 'Le nom est obligatoire.';
   else if (lastName.length > NAME_MAX) errors.lastName = `Le nom ne doit pas dépasser ${NAME_MAX} caractères.`;
 
-  // Email optionnel : valide le format seulement s'il est fourni.
-  if (email && !isValidEmail(email)) {
+  if (!email) {
+    errors.email = "L'email est obligatoire.";
+  } else if (!isValidEmail(email)) {
     errors.email = "L'email n'est pas valide.";
+  }
+
+  // Mot de passe : requis a la creation, optionnel a l'edition.
+  if (isCreate || password) {
+    if (!password) {
+      errors.password = 'Le mot de passe est obligatoire.';
+    } else if (password.length < PASSWORD_MIN) {
+      errors.password = `Le mot de passe doit contenir au moins ${PASSWORD_MIN} caracteres.`;
+    } else if (Buffer.byteLength(password, 'utf8') > PASSWORD_MAX) {
+      errors.password = `Le mot de passe ne doit pas depasser ${PASSWORD_MAX} caracteres.`;
+    }
   }
 
   // Telephone optionnel.
@@ -44,8 +60,9 @@ function validateStudent(body) {
     value: {
       firstName,
       lastName,
-      email: email || null,
+      email,
       phone: phone || null,
+      password,
     },
   };
 }

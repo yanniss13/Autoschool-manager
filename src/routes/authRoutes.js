@@ -59,6 +59,21 @@ const employeeLoginLimiter = rateLimit({
   },
 });
 
+const studentLoginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  skipSuccessfulRequests: true,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    res.status(429).render('auth/student-login', {
+      title: 'Connexion eleve',
+      errors: { global: 'Trop de tentatives de connexion echouees. Reessayez dans 15 minutes.' },
+      values: { email: req.body.email },
+    });
+  },
+});
+
 router.get('/register', redirectIfAuth, authController.showRegister);
 router.post('/register', registerLimiter, redirectIfAuth, authController.register);
 
@@ -68,7 +83,11 @@ router.post('/login', loginLimiter, redirectIfAuth, authController.login);
 router.get('/employee-login', redirectIfAuth, authController.showEmployeeLogin);
 router.post('/employee-login', employeeLoginLimiter, redirectIfAuth, authController.employeeLogin);
 
+router.get('/student-login', redirectIfAuth, authController.showStudentLogin);
+router.post('/student-login', studentLoginLimiter, redirectIfAuth, authController.studentLogin);
+
 router.post('/logout', authController.logout);
 router.post('/employee-logout', authController.employeeLogout);
+router.post('/student-logout', authController.studentLogout);
 
 module.exports = router;

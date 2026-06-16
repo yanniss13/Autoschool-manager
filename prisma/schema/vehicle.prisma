@@ -1,0 +1,19 @@
+model Vehicle {
+  id                 Int     @id @default(autoincrement())
+  registrationNumber String  @unique
+  brand              String
+  model              String
+  year               Int?
+  transmission       String?
+
+  companyId Int
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  // Relation 1-1 optionnelle : un vehicule a zero ou un employe referent.
+  // Le @unique garantit au niveau base qu'un employe n'est referent que d'un seul vehicule.
+  employeeId Int?      @unique
+  employee   Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

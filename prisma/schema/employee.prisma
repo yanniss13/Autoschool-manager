@@ -1,0 +1,19 @@
+model Employee {
+  id           Int     @id @default(autoincrement())
+  firstName    String
+  lastName     String
+  email        String  @unique
+  passwordHash String
+  age          Int?
+  gender       String?
+
+  companyId Int
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  // Cote "un" de la relation 1-1 : la cle etrangere est portee par Vehicle.
+  vehicle       Vehicle?
+  scheduleSlots ScheduleSlot[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

@@ -4,6 +4,10 @@ module.exports = function redirectIfAuth(req, res, next) {
     return res.redirect('/employee-space');
   }
 
+  if (req.session && req.session.studentId && req.session.authRole === 'student') {
+    return res.redirect('/student-space');
+  }
+
   if (req.session && req.session.companyId) {
     return res.redirect('/dashboard');
   }

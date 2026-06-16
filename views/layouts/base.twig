@@ -4,6 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="csrf-token" content="{{ csrfToken }}">
+  {# Pose le theme (clair/sombre) AVANT le rendu pour eviter tout clignotement. #}
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem('asm-theme');
+        if (!t) t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', t);
+      } catch (e) {}
+    })();
+  </script>
   <title>{% if title %}{{ title }} · {% endif %}AutoSchool Manager</title>
   <link rel="stylesheet" href="/css/style.css">
 </head>
@@ -22,5 +32,6 @@
   </footer>
 
   {% block scripts %}{% endblock %}
+  <script src="/js/ui.js" defer></script>
 </body>
 </html>

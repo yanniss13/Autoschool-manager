@@ -77,6 +77,19 @@ function findByEmployeeBetween(employeeId, rangeStart, rangeEnd) {
   });
 }
 
+// Creneaux d'un eleve chevauchant la fenetre [rangeStart, rangeEnd).
+function findByStudentBetween(studentId, rangeStart, rangeEnd) {
+  return prisma.scheduleSlot.findMany({
+    where: {
+      studentId,
+      startsAt: { lt: rangeEnd },
+      endsAt: { gt: rangeStart },
+    },
+    include: { employee: true },
+    orderBy: { startsAt: 'asc' },
+  });
+}
+
 module.exports = {
   findAllByCompany,
   findOwnedById,
@@ -86,4 +99,5 @@ module.exports = {
   deleteOwned,
   findAllForEmployee,
   findByEmployeeBetween,
+  findByStudentBetween,
 };

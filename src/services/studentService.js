@@ -16,6 +16,22 @@ function findOwnedById(companyId, id) {
   return prisma.student.findFirst({ where: { id, companyId } });
 }
 
+// Recherche un eleve par email globalement unique (connexion eleve).
+function findByEmail(email) {
+  return prisma.student.findUnique({
+    where: { email },
+    include: { company: true },
+  });
+}
+
+// Charge un eleve connecte avec son entreprise.
+function findByIdWithAccess(id) {
+  return prisma.student.findUnique({
+    where: { id },
+    include: { company: true },
+  });
+}
+
 // Cree un eleve pour une entreprise.
 function createForCompany(companyId, data) {
   return prisma.student.create({ data: { ...data, companyId } });
@@ -39,6 +55,8 @@ function countByCompany(companyId) {
 module.exports = {
   findAllByCompany,
   findOwnedById,
+  findByEmail,
+  findByIdWithAccess,
   createForCompany,
   updateOwned,
   deleteOwned,

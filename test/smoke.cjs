@@ -36,6 +36,7 @@ const siretB = String(stamp + 1).padStart(14, '0').slice(-14);
 const emailA1 = `e1-${stamp}@test.com`;
 const emailA2 = `e2-${stamp}@test.com`;
 const emailB = `eb-${stamp}@test.com`;
+const studentEmail = `eleve${stamp}@test.fr`;
 
 let pass = 0;
 let fail = 0;
@@ -243,7 +244,7 @@ async function runTests() {
   check('Affectation d\'un employe disponible', v1.employeeId === e1.id, `employeeId=${v1.employeeId}`);
 
   section('CRUD ÉLÈVES');
-  r = await a('/students', { method: 'POST', body: { firstName: 'Eleve', lastName: 'Dupont', email: `eleve${stamp}@test.fr`, phone: '0612345678' } });
+  r = await a('/students', { method: 'POST', body: { firstName: 'Eleve', lastName: 'Dupont', email: studentEmail, phone: '0612345678', password: 'eleve1234' } });
   check('Creation eleve valide', r.status === 302 && r.location === '/students', `status=${r.status}`);
   const studentA = await prisma.student.findFirst({ where: { companyId: companyA.id } });
   check('Eleve persiste en base', !!studentA, 'eleve introuvable');
@@ -253,9 +254,13 @@ async function runTests() {
   check('Creation eleve refusee sans prenom (400)', r.status === 400 && /prénom/i.test(r.text), `status=${r.status}`);
   r = await a('/students', { method: 'POST', body: { firstName: 'Bad', lastName: 'Email', email: 'pas-un-email' } });
   check('Creation eleve refusee si email invalide (400)', r.status === 400 && /valide/i.test(r.text), `status=${r.status}`);
-  await a(`/students/${studentA.id}/update`, { method: 'POST', body: { firstName: 'EleveMod', lastName: 'Dupont', email: '', phone: '' } });
+  await a(`/students/${studentA.id}/update`, { method: 'POST', body: { firstName: 'EleveMod', lastName: 'Dupont', email: studentEmail, phone: '', password: '' } });
   const studentMod = await prisma.student.findUnique({ where: { id: studentA.id } });
-  check('Edition eleve (email vide -> null)', studentMod.firstName === 'EleveMod' && studentMod.email === null, 'edition ko');
+  check(
+    'Edition eleve sans changer le mot de passe',
+    studentMod.firstName === 'EleveMod' && studentMod.email === studentEmail && studentMod.passwordHash === studentA.passwordHash,
+    'edition ko'
+  );
 
   section('PLANNING & ESPACE EMPLOYE');
   const slotStart = '2030-01-02T09:00';
@@ -336,6 +341,25 @@ async function runTests() {
   check('Events employe refuse une date invalide (400)', r.status === 400 && /Dates invalides/.test(r.text), `status=${r.status}`);
   r = await employeeClient('/dashboard');
   check('Employe connecte refuse sur routes gerant', employeeLoggedIn && r.status === 302 && r.location === '/login', `status=${r.status}`);
+
+  const studentClient = makeClient();
+  r = await studentClient('/student-login', { method: 'POST', body: { email: studentEmail, password: 'eleve1234' } });
+  const studentLoggedIn = r.status === 302 && r.location === '/student-space';
+  check('Connexion eleve par email + mot de passe', studentLoggedIn, `status=${r.status}`);
+  r = await studentClient('/student-space');
+  check(
+    'Espace eleve -> 200 avec portail complet',
+    studentLoggedIn && r.status === 200 && /Mon planning/.test(r.text) && /Entrainement code/.test(r.text) && /Assistant code/.test(r.text),
+    `status=${r.status}`
+  );
+  r = await studentClient('/student-space/events?start=2029-12-01&end=2030-02-01');
+  check('Events eleve -> JSON avec son creneau', r.status === 200 && /Cours de conduite/.test(r.text), `status=${r.status}`);
+  r = await studentClient('/student-space/training', { method: 'POST', body: { theme: 'priorites', answers: 'priorites-1:b' } });
+  check('Session entrainement eleve persistee', r.status === 302 && r.location === '/student-space', `status=${r.status}`);
+  r = await studentClient('/student-space/assistant', { method: 'POST', body: { message: 'Comment fonctionne une priorite a droite ?' } });
+  check('Assistant code repond a une question eleve', r.status === 200 && /priorit/i.test(r.text), `status=${r.status}`);
+  r = await studentClient('/dashboard');
+  check('Eleve connecte refuse sur routes gerant', studentLoggedIn && r.status === 302 && r.location === '/login', `status=${r.status}`);
 
   await a(`/vehicles/${v2.id}/assign`, { method: 'POST', body: { employeeId: String(e1.id) } });
   v2 = await prisma.vehicle.findUnique({ where: { id: v2.id } });

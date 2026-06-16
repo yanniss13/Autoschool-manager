@@ -1,0 +1,15 @@
+model Company {
+  id           Int      @id @default(autoincrement())
+  businessName String
+  siret        String   @unique
+  directorName String?
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  employees     Employee[]
+  vehicles      Vehicle[]
+  students      Student[]
+  scheduleSlots ScheduleSlot[]
+  roadCodeTrainingSessions RoadCodeTrainingSession[]
+}

@@ -1,0 +1,118 @@
+{% extends 'layouts/base.twig' %}
+
+{% block content %}
+  <section class="page-header student-portal-header">
+    <div>
+      <p class="eyebrow">Espace eleve</p>
+      <h1>Bonjour {{ student.firstName }}</h1>
+      <p class="muted">{{ student.company.businessName }} - Code de la route et lecons de conduite</p>
+    </div>
+  </section>
+
+  <section class="summary-grid">
+    <article class="summary-card">
+      <h2>Profil</h2>
+      <p><strong>{{ student.firstName }} {{ student.lastName }}</strong></p>
+      <p class="muted">{{ student.email }}</p>
+    </article>
+
+    <article class="summary-card learning-score-card">
+      <h2>Progression code</h2>
+      <p class="stat-value">{{ progress.successRate }}%</p>
+      <p class="muted">{{ progress.totalScore }}/{{ progress.totalQuestions }} bonnes reponses</p>
+    </article>
+
+    <article class="summary-card">
+      <h2>Dernieres sessions</h2>
+      {% if progress.recent|length > 0 %}
+        <ul class="compact-list">
+          {% for session in progress.recent %}
+            <li>{{ session.theme }} : {{ session.score }}/{{ session.total }}</li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="muted">Aucune session pour le moment.</p>
+      {% endif %}
+    </article>
+  </section>
+
+  <section class="page-header">
+    <h2>Mon planning</h2>
+  </section>
+
+  <div id="calendar"
+       data-events-url="/student-space/events"
+       data-editable="false"></div>
+
+  <section class="student-learning-grid">
+    <article class="form-card">
+      <h2>Entrainement code</h2>
+      <p class="muted">Choisis les reponses puis enregistre ta session.</p>
+
+      <form action="/student-space/training" method="post">
+        <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+
+        <div class="form-group">
+          <label for="theme">Theme</label>
+          <select id="theme" name="theme">
+            {% for theme in themes %}
+              <option value="{{ theme.id }}" {% if theme.id == selectedTheme.id %}selected{% endif %}>{{ theme.label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        {% for question in questions %}
+          <fieldset class="training-question">
+            <legend>{{ question.text }}</legend>
+            {% for choice in question.choices %}
+              <label class="choice-row">
+                <input type="radio" name="answer_{{ question.id }}" value="{{ choice.id }}">
+                <span>{{ choice.text }}</span>
+              </label>
+            {% endfor %}
+            <p class="muted">{{ question.explanation }}</p>
+          </fieldset>
+        {% endfor %}
+
+        <button type="submit" class="btn btn-primary">Enregistrer la session</button>
+      </form>
+    </article>
+
+    <article class="form-card">
+      <h2>Assistant code</h2>
+      <p class="muted">Pose une question sur les priorites, panneaux, vitesses, stationnement ou securite.</p>
+
+      {% if assistant %}
+        <div class="assistant-thread">
+          <p><strong>Toi :</strong> {{ assistant.message }}</p>
+          <p><strong>Assistant :</strong> {{ assistant.reply }}</p>
+        </div>
+      {% endif %}
+
+      <form action="/student-space/assistant" method="post">
+        <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+        <div class="form-group">
+          <label for="message">Ta question</label>
+          <textarea id="message" name="message" rows="4" maxlength="500" required>{% if assistant %}{{ assistant.message }}{% endif %}</textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Demander a l'assistant</button>
+      </form>
+    </article>
+  </section>
+
+  <section class="summary-grid">
+    {% for theme in progress.themeStats %}
+      <article class="summary-card">
+        <h2>{{ theme.label }}</h2>
+        <p class="stat-value">{{ theme.rate }}%</p>
+        <p class="muted">{{ theme.score }}/{{ theme.total }} bonnes reponses</p>
+      </article>
+    {% endfor %}
+  </section>
+{% endblock %}
+
+{% block scripts %}
+  <script src="/vendor/fullcalendar/index.global.min.js"></script>
+  <script src="/vendor/fullcalendar/fr.global.min.js"></script>
+  <script src="/js/planning-calendar.js"></script>
+{% endblock %}

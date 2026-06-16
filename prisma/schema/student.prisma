@@ -1,0 +1,17 @@
+model Student {
+  id           Int     @id @default(autoincrement())
+  firstName    String
+  lastName     String
+  email        String? @unique
+  phone        String?
+  passwordHash String?
+
+  companyId Int
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  scheduleSlots ScheduleSlot[]
+  trainingSessions RoadCodeTrainingSession[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

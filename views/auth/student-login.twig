@@ -2,17 +2,17 @@
 
 {% block content %}
   <section class="form-card">
-    <h1>Connexion gérant</h1>
+    <h1>Connexion eleve</h1>
 
     {% if errors.global %}<div class="flash flash-error">{{ errors.global }}</div>{% endif %}
 
-    <form action="/login" method="post" novalidate>
+    <form action="/student-login" method="post" novalidate>
       <input type="hidden" name="_csrf" value="{{ csrfToken }}">
       <div class="form-group">
-        <label for="siret">SIRET</label>
-        <input type="text" id="siret" name="siret" inputmode="numeric"
-               autocomplete="username" value="{{ values.siret|default('') }}" required>
-        {% if errors.siret %}<p class="field-error">{{ errors.siret }}</p>{% endif %}
+        <label for="email">Email eleve</label>
+        <input type="email" id="email" name="email"
+               autocomplete="username" value="{{ values.email|default('') }}" required>
+        {% if errors.email %}<p class="field-error">{{ errors.email }}</p>{% endif %}
       </div>
 
       <div class="form-group">
@@ -25,7 +25,6 @@
       <button type="submit" class="btn btn-primary">Se connecter</button>
     </form>
 
-    <p class="form-footer">Pas encore de compte ? <a href="/register">Inscrire mon auto-école</a></p>
-    <p class="form-footer">Tu es eleve ? <a href="/student-login">Connexion eleve</a></p>
+    <p class="form-footer">Espace reserve aux eleves crees par le gerant.</p>
   </section>
 {% endblock %}
