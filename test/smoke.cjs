@@ -58,8 +58,8 @@ function makeClient() {
   let cookie = '';
   let csrfToken = null;
 
-  async function raw(p, { method = 'GET', body } = {}) {
-    const headers = {};
+  async function raw(p, { method = 'GET', body, headers: extraHeaders } = {}) {
+    const headers = { ...(extraHeaders || {}) };
     if (cookie) headers.Cookie = cookie;
     let payload;
     if (body) {
@@ -348,16 +348,46 @@ async function runTests() {
   check('Connexion eleve par email + mot de passe', studentLoggedIn, `status=${r.status}`);
   r = await studentClient('/student-space');
   check(
-    'Espace eleve -> 200 avec portail complet',
-    studentLoggedIn && r.status === 200 && /Mon planning/.test(r.text) && /Entrainement code/.test(r.text) && /Assistant code/.test(r.text),
+    'Accueil eleve -> 200 avec profil + planning',
+    studentLoggedIn && r.status === 200 && /Mon planning/.test(r.text) && /Profil/.test(r.text),
     `status=${r.status}`
   );
+  r = await studentClient('/student-space/training');
+  check('Page entrainement -> 200 avec quiz', r.status === 200 && /Entrainement code/.test(r.text) && /training-quiz/.test(r.text), `status=${r.status}`);
+  r = await studentClient('/student-space/assistant');
+  check('Page assistant -> 200 avec chat', r.status === 200 && /Assistant code/.test(r.text) && /assistant-form/.test(r.text), `status=${r.status}`);
   r = await studentClient('/student-space/events?start=2029-12-01&end=2030-02-01');
   check('Events eleve -> JSON avec son creneau', r.status === 200 && /Cours de conduite/.test(r.text), `status=${r.status}`);
+  r = await studentClient('/student-space/training/questions?theme=vitesse', { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+  check(
+    'Questions du theme rechargees en AJAX',
+    r.status === 200 && /quiz-question/.test(r.text) && /vitesse maximale/.test(r.text),
+    `status=${r.status}`
+  );
   r = await studentClient('/student-space/training', { method: 'POST', body: { theme: 'priorites', answers: 'priorites-1:b' } });
-  check('Session entrainement eleve persistee', r.status === 302 && r.location === '/student-space', `status=${r.status}`);
+  check('Session entrainement eleve persistee', r.status === 302 && r.location === '/student-space/training', `status=${r.status}`);
   r = await studentClient('/student-space/assistant', { method: 'POST', body: { message: 'Comment fonctionne une priorite a droite ?' } });
   check('Assistant code repond a une question eleve', r.status === 200 && /priorit/i.test(r.text), `status=${r.status}`);
+  check(
+    'Assistant code conserve le fil de conversation',
+    r.status === 200 && /assistant-bubble/.test(r.text) && /Comment fonctionne une priorite/.test(r.text),
+    `status=${r.status}`
+  );
+  r = await studentClient('/student-space/assistant', {
+    method: 'POST',
+    body: { message: 'Quelle distance de securite garder ?' },
+    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+  });
+  check('Assistant code repond en JSON sur requete AJAX', r.status === 200 && /"reply"/.test(r.text), `status=${r.status}`);
+  // Deuxieme session : la progression doit s'agreger (resume sur l'accueil, courbe sur entrainement).
+  r = await studentClient('/student-space/training', { method: 'POST', body: { theme: 'vitesse', answers: 'vitesse-1:b' } });
+  check('Deuxieme session entrainement persistee', r.status === 302 && r.location === '/student-space/training', `status=${r.status}`);
+  r = await studentClient('/student-space');
+  check('Resume progression sur accueil (2 sessions)', r.status === 200 && /2 session\(s\)/.test(r.text), `status=${r.status}`);
+  r = await studentClient('/student-space/training');
+  check('Courbe de progression sur page entrainement', r.status === 200 && /chart__line/.test(r.text), `status=${r.status}`);
+  r = await studentClient('/student-space/assistant/clear', { method: 'POST', body: {} });
+  check('Effacement du fil assistant', r.status === 302 && r.location === '/student-space/assistant', `status=${r.status}`);
   r = await studentClient('/dashboard');
   check('Eleve connecte refuse sur routes gerant', studentLoggedIn && r.status === 302 && r.location === '/login', `status=${r.status}`);
 

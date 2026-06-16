@@ -1,0 +1,34 @@
+{# Corps du quiz d'entrainement (questions du theme courant).
+   Inclus par student-space/training.twig et rendu seul par GET /student-space/training/questions
+   (rechargement AJAX du theme, sans recharger toute la page). #}
+<input type="hidden" name="theme" value="{{ selectedTheme.id }}">
+
+<div class="quiz-progress">
+  <span class="quiz-progress__label">Question <span data-quiz-current>1</span> / {{ questions|length }}</span>
+  <div class="quiz-progress__track" aria-hidden="true">
+    <span class="quiz-progress__bar" data-quiz-bar></span>
+  </div>
+</div>
+
+{% for question in questions %}
+  <fieldset class="quiz-question" data-correct="{{ question.correctChoice }}" {% if not loop.first %}hidden{% endif %}>
+    <legend>{{ question.text }}</legend>
+    {% for choice in question.choices %}
+      <label class="choice-row" data-choice="{{ choice.id }}">
+        <input type="radio" name="answer_{{ question.id }}" value="{{ choice.id }}">
+        <span class="choice-row__marker" aria-hidden="true"></span>
+        <span class="choice-row__text">{{ choice.text }}</span>
+      </label>
+    {% endfor %}
+    <p class="quiz-feedback" data-quiz-feedback hidden></p>
+    <p class="quiz-explanation" data-quiz-explanation hidden>{{ question.explanation }}</p>
+  </fieldset>
+{% endfor %}
+
+<div class="quiz-actions">
+  <button type="button" class="btn btn-primary" data-quiz-validate>Valider</button>
+  <button type="button" class="btn" data-quiz-next hidden>Question suivante</button>
+  <button type="submit" class="btn btn-primary" data-quiz-finish hidden>Terminer et enregistrer</button>
+</div>
+
+<p class="quiz-result" data-quiz-result hidden></p>

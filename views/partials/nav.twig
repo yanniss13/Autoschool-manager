@@ -18,7 +18,9 @@
         <button type="submit" class="link-button">Deconnexion</button>
       </form>
     {% elseif currentStudent %}
-      <a href="/student-space">Mon espace eleve</a>
+      <a href="/student-space">Accueil</a>
+      <a href="/student-space/training">Entrainement</a>
+      <a href="/student-space/assistant">Assistant</a>
       <form action="/student-logout" method="post" class="inline-form">
         <input type="hidden" name="_csrf" value="{{ csrfToken }}">
         <button type="submit" class="link-button">Deconnexion</button>

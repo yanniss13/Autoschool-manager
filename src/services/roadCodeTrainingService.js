@@ -61,11 +61,43 @@ function recentSessions(studentId, take = 5) {
   });
 }
 
+// Compte les jours consecutifs (en partant d'aujourd'hui) avec au moins une session.
+function computeStreak(sessions) {
+  if (sessions.length === 0) return 0;
+
+  const dayKey = (date) => {
+    const d = new Date(date);
+    return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+  };
+
+  const days = new Set(sessions.map((session) => dayKey(session.createdAt)));
+  let streak = 0;
+  const cursor = new Date();
+  // On tolere une serie qui demarre hier si rien aujourd'hui.
+  if (!days.has(dayKey(cursor))) cursor.setDate(cursor.getDate() - 1);
+
+  while (days.has(dayKey(cursor))) {
+    streak += 1;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+
+  return streak;
+}
+
 async function progressForStudent(studentId) {
   const sessions = await prisma.roadCodeTrainingSession.findMany({
     where: { studentId },
     orderBy: { createdAt: 'desc' },
   });
+
+  // Serie chronologique (ancien -> recent) des taux par session, pour tracer la courbe.
+  const history = [...sessions]
+    .reverse()
+    .map((session) => ({
+      theme: session.theme,
+      rate: session.total > 0 ? Math.round((session.score / session.total) * 100) : 0,
+      createdAt: session.createdAt,
+    }));
 
   const totals = sessions.reduce(
     (acc, session) => {
@@ -88,6 +120,9 @@ async function progressForStudent(studentId) {
   return {
     sessions,
     recent: sessions.slice(0, 5),
+    history,
+    sessionCount: sessions.length,
+    streak: computeStreak(sessions),
     totalScore: totals.score,
     totalQuestions: totals.total,
     successRate: totals.total > 0 ? Math.round((totals.score / totals.total) * 100) : 0,

@@ -876,14 +876,87 @@ small {
   background: var(--surface);
 }
 
-/* Conteneur du calendrier (le rendu interne vient du bundle vendor) */
+/* Conteneur du calendrier (le rendu interne vient du bundle vendor).
+   On remappe les variables --fc-* de FullCalendar sur les tokens de l'app :
+   le calendrier suit donc automatiquement le theme clair / sombre. */
 #calendar {
+  /* surfaces, bordures, textes */
+  --fc-border-color: var(--border);
+  --fc-page-bg-color: var(--surface);
+  --fc-neutral-bg-color: var(--surface-2);
+  --fc-neutral-text-color: var(--muted);
+  --fc-today-bg-color: var(--primary-soft);
+  --fc-now-indicator-color: var(--error);
+  --fc-highlight-color: var(--primary-soft);
+  --fc-non-business-color: var(--surface-2);
+  /* evenements (creneaux) */
+  --fc-event-bg-color: var(--primary);
+  --fc-event-border-color: var(--primary);
+  --fc-event-text-color: var(--on-primary);
+  --fc-list-event-hover-bg-color: var(--surface-2);
+  /* boutons de la barre d'outils -> style primaire de l'app */
+  --fc-button-text-color: var(--on-primary);
+  --fc-button-bg-color: var(--primary);
+  --fc-button-border-color: var(--primary);
+  --fc-button-hover-bg-color: var(--primary-hover);
+  --fc-button-hover-border-color: var(--primary-hover);
+  --fc-button-active-bg-color: var(--primary-active);
+  --fc-button-active-border-color: var(--primary-active);
+
   font-size: 0.9rem;
+  color: var(--text);
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: var(--space-4);
   box-shadow: var(--shadow-sm);
+}
+
+/* Textes internes du calendrier : suivent le theme */
+#calendar .fc-toolbar-title { color: var(--text); }
+
+#calendar a,
+#calendar .fc-col-header-cell-cushion,
+#calendar .fc-daygrid-day-number,
+#calendar .fc-list-day-text,
+#calendar .fc-list-day-side-text {
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+
+#calendar .fc-timegrid-slot-label-cushion,
+#calendar .fc-timegrid-axis-cushion {
+  color: var(--muted);
+}
+
+/* Boutons : rayon + ombre coherents avec l'app */
+#calendar .fc-button {
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-xs);
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+#calendar .fc-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--primary-ring);
+}
+
+/* Creneaux : coins arrondis et survol legerement souleve */
+#calendar .fc-event {
+  border-radius: var(--radius-sm);
+  padding: 1px 2px;
+  font-weight: 600;
+  box-shadow: var(--shadow-xs);
+}
+
+#calendar .fc-event:hover {
+  filter: brightness(1.06);
+}
+
+/* Ligne "maintenant" plus visible */
+#calendar .fc-timegrid-now-indicator-line {
+  border-width: 2px;
 }
 
 /* ===================================================================
@@ -1172,7 +1245,8 @@ small {
   padding-left: var(--space-4);
 }
 
-.training-question {
+.training-question,
+.quiz-question {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   padding: var(--space-4);
@@ -1180,30 +1254,454 @@ small {
   background: var(--surface-2);
 }
 
-.training-question legend {
+.training-question legend,
+.quiz-question legend {
   padding: 0 var(--space-2);
   font-weight: 700;
   color: var(--text);
 }
 
-.choice-row {
+/* ===================================================================
+   QUIZ D'ENTRAINEMENT (page Entrainement code)
+   =================================================================== */
+.quiz-theme-form {
   display: flex;
-  gap: var(--space-2);
-  align-items: flex-start;
-  margin-top: var(--space-2);
-  cursor: pointer;
+  align-items: flex-end;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-5);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--border);
 }
 
+.quiz-theme-form .form-group {
+  margin: 0;
+  min-width: 220px;
+}
+
+/* Barre de progression du quiz */
+.quiz-progress {
+  margin: 0 0 var(--space-4);
+}
+
+.quiz-progress__label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.5rem;
+}
+
+.quiz-progress__track {
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.quiz-progress__bar {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--primary), var(--primary-hover));
+  transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Question */
+.quiz-question {
+  border: none;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+}
+
+.quiz-question legend {
+  padding: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--text);
+  margin-bottom: var(--space-4);
+}
+
+/* Reponses : cartes d'option avec puce personnalisee */
+.choice-row {
+  display: flex;
+  gap: 0.85rem;
+  align-items: center;
+  margin-top: var(--space-3);
+  padding: 0.85rem 1rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  cursor: pointer;
+  transition: border-color var(--transition), background var(--transition), transform var(--transition);
+}
+
+.choice-row:hover {
+  border-color: var(--primary);
+  transform: translateX(2px);
+}
+
+/* On masque le radio natif au profit de la puce .choice-row__marker */
 .choice-row input {
-  margin-top: 0.25rem;
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.choice-row__marker {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--border-strong);
+  display: grid;
+  place-items: center;
+  transition: border-color var(--transition), background var(--transition);
+}
+
+.choice-row__marker::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #fff;
+  transform: scale(0);
+  transition: transform var(--transition);
+}
+
+.choice-row__text {
+  flex: 1;
+}
+
+/* Selection (puce + carte) */
+.choice-row input:checked + .choice-row__marker {
+  border-color: var(--primary);
+  background: var(--primary);
+}
+
+.choice-row input:checked + .choice-row__marker::after {
+  transform: scale(1);
+}
+
+.choice-row:has(input:checked) {
+  border-color: var(--primary);
+  background: var(--info-soft);
+}
+
+/* Accessibilite : focus clavier visible sur la carte */
+.choice-row input:focus-visible + .choice-row__marker {
+  box-shadow: 0 0 0 3px var(--info-soft);
+}
+
+/* Verrou visuel apres validation (radios non desactives -> restent envoyes au POST) */
+.quiz-question.is-locked .choice-row {
+  pointer-events: none;
+}
+
+/* Coloration apres correction */
+.choice-row.is-correct {
+  border-color: var(--success-border);
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.choice-row.is-correct .choice-row__marker {
+  border-color: var(--success);
+  background: var(--success);
+}
+
+.choice-row.is-correct .choice-row__marker::after { transform: scale(1); }
+
+.choice-row.is-wrong {
+  border-color: var(--error-border);
+  background: var(--error-soft);
+  color: var(--error);
+}
+
+.choice-row.is-wrong .choice-row__marker {
+  border-color: var(--error);
+  background: var(--error);
+}
+
+.choice-row.is-wrong .choice-row__marker::after { transform: scale(1); }
+
+/* Feedback + explication */
+.quiz-feedback {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  margin: var(--space-4) 0 var(--space-2);
+}
+
+.quiz-feedback::before {
+  font-size: 1.1em;
+  line-height: 1;
+}
+
+.quiz-feedback.is-correct { color: var(--success); }
+.quiz-feedback.is-correct::before { content: "\2714"; }
+
+.quiz-feedback.is-wrong { color: var(--error); }
+.quiz-feedback.is-wrong::before { content: "\2716"; }
+
+.quiz-feedback.is-hint { color: var(--muted); font-weight: 600; }
+.quiz-feedback.is-hint::before { content: "\2139"; }
+
+.quiz-explanation {
+  color: var(--text-secondary);
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-left: 3px solid var(--border-strong);
+  background: var(--surface-2);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.quiz-actions {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-top: var(--space-5);
+}
+
+.quiz-result {
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  font-weight: 700;
+  color: var(--text);
+  text-align: center;
+  background: var(--info-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+/* Assistant code : en-tete, badge d'etat et fil de conversation */
+.assistant-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.badge-muted {
+  background: var(--surface-2);
+  color: var(--muted);
+  border-color: var(--border);
 }
 
 .assistant-thread {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  background: var(--info-soft);
+  background: var(--surface-2);
   padding: var(--space-4);
   margin: var(--space-4) 0;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.assistant-bubble {
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.75rem;
+  max-width: 85%;
+}
+
+.assistant-bubble p {
+  margin: 0.15rem 0 0;
+  white-space: pre-wrap;
+}
+
+.assistant-bubble__author {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  opacity: 0.7;
+}
+
+.assistant-bubble--user {
+  align-self: flex-end;
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+.assistant-bubble--assistant {
+  align-self: flex-start;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.assistant-clear {
+  margin-top: var(--space-2);
+}
+
+/* ===================================================================
+   GRAPHIQUE "EVOLUTION DES SCORES" (SVG inline, sans librairie)
+   =================================================================== */
+.chart-card {
+  margin: var(--space-5) 0;
+  padding: var(--space-5);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.chart-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-4);
+}
+
+.chart-card__head h2 {
+  margin: 0 0 0.25rem;
+}
+
+.chart-card__stats {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.chart-pill {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: var(--radius-pill);
+  background: var(--primary);
+  color: var(--on-primary);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.chart-pill strong { font-size: 1rem; }
+
+.chart-pill--soft {
+  background: var(--info-soft);
+  color: var(--primary);
+}
+
+.chart {
+  width: 100%;
+  height: auto;
+  display: block;
+  overflow: visible;
+}
+
+.chart__grid {
+  stroke: var(--border);
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+}
+
+.chart__axis-label {
+  fill: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.chart__grad-top { stop-color: var(--primary); stop-opacity: 0.28; }
+.chart__grad-bottom { stop-color: var(--primary); stop-opacity: 0; }
+
+.chart__area {
+  stroke: none;
+}
+
+.chart__line {
+  fill: none;
+  stroke: var(--primary);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.chart__dot {
+  fill: var(--surface);
+  stroke: var(--primary);
+  stroke-width: 2.5;
+}
+
+.chart__dot--last {
+  fill: var(--primary);
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--primary) 55%, transparent));
+}
+
+/* ---- Jauges de progression par theme ---- */
+.theme-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-4);
+}
+
+.theme-stat {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+}
+
+/* Anneau de progression dessine en conic-gradient a partir de --rate */
+.theme-stat__gauge {
+  --size: 64px;
+  position: relative;
+  flex-shrink: 0;
+  width: var(--size);
+  height: var(--size);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background:
+    conic-gradient(var(--primary) calc(var(--rate) * 1%), var(--surface-2) 0);
+}
+
+.theme-stat__gauge::before {
+  content: "";
+  position: absolute;
+  width: calc(var(--size) - 14px);
+  height: calc(var(--size) - 14px);
+  border-radius: 50%;
+  background: var(--surface);
+}
+
+.theme-stat__gauge-value {
+  position: relative;
+  font-weight: 800;
+  font-size: 1.05rem;
+  color: var(--text);
+}
+
+.theme-stat__gauge-value small {
+  font-size: 0.65em;
+  color: var(--muted);
+}
+
+.theme-stat__meta h3 {
+  margin: 0 0 0.2rem;
+  font-size: 1rem;
+}
+
+.theme-stat__meta p { margin: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .quiz-progress__bar { transition: none; }
 }
 
 .learning-score-card .stat-value {

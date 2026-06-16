@@ -20,6 +20,8 @@
       <h2>Progression code</h2>
       <p class="stat-value">{{ progress.successRate }}%</p>
       <p class="muted">{{ progress.totalScore }}/{{ progress.totalQuestions }} bonnes reponses</p>
+      <p class="muted">{{ progress.sessionCount }} session(s) &middot; serie de {{ progress.streak }} jour(s)</p>
+      <p><a href="/student-space/training" class="btn btn-primary">S'entrainer au code</a></p>
     </article>
 
     <article class="summary-card">
@@ -43,72 +45,6 @@
   <div id="calendar"
        data-events-url="/student-space/events"
        data-editable="false"></div>
-
-  <section class="student-learning-grid">
-    <article class="form-card">
-      <h2>Entrainement code</h2>
-      <p class="muted">Choisis les reponses puis enregistre ta session.</p>
-
-      <form action="/student-space/training" method="post">
-        <input type="hidden" name="_csrf" value="{{ csrfToken }}">
-
-        <div class="form-group">
-          <label for="theme">Theme</label>
-          <select id="theme" name="theme">
-            {% for theme in themes %}
-              <option value="{{ theme.id }}" {% if theme.id == selectedTheme.id %}selected{% endif %}>{{ theme.label }}</option>
-            {% endfor %}
-          </select>
-        </div>
-
-        {% for question in questions %}
-          <fieldset class="training-question">
-            <legend>{{ question.text }}</legend>
-            {% for choice in question.choices %}
-              <label class="choice-row">
-                <input type="radio" name="answer_{{ question.id }}" value="{{ choice.id }}">
-                <span>{{ choice.text }}</span>
-              </label>
-            {% endfor %}
-            <p class="muted">{{ question.explanation }}</p>
-          </fieldset>
-        {% endfor %}
-
-        <button type="submit" class="btn btn-primary">Enregistrer la session</button>
-      </form>
-    </article>
-
-    <article class="form-card">
-      <h2>Assistant code</h2>
-      <p class="muted">Pose une question sur les priorites, panneaux, vitesses, stationnement ou securite.</p>
-
-      {% if assistant %}
-        <div class="assistant-thread">
-          <p><strong>Toi :</strong> {{ assistant.message }}</p>
-          <p><strong>Assistant :</strong> {{ assistant.reply }}</p>
-        </div>
-      {% endif %}
-
-      <form action="/student-space/assistant" method="post">
-        <input type="hidden" name="_csrf" value="{{ csrfToken }}">
-        <div class="form-group">
-          <label for="message">Ta question</label>
-          <textarea id="message" name="message" rows="4" maxlength="500" required>{% if assistant %}{{ assistant.message }}{% endif %}</textarea>
-        </div>
-        <button type="submit" class="btn btn-primary">Demander a l'assistant</button>
-      </form>
-    </article>
-  </section>
-
-  <section class="summary-grid">
-    {% for theme in progress.themeStats %}
-      <article class="summary-card">
-        <h2>{{ theme.label }}</h2>
-        <p class="stat-value">{{ theme.rate }}%</p>
-        <p class="muted">{{ theme.score }}/{{ theme.total }} bonnes reponses</p>
-      </article>
-    {% endfor %}
-  </section>
 {% endblock %}
 
 {% block scripts %}

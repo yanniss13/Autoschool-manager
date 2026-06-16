@@ -1,0 +1,106 @@
+{% extends 'layouts/base.twig' %}
+
+{% block content %}
+  <section class="page-header">
+    <div>
+      <p class="eyebrow">Espace eleve</p>
+      <h1>Entrainement code</h1>
+      <p class="muted">Reponds question par question : valide, decouvre la correction, puis passe a la suivante.</p>
+    </div>
+  </section>
+
+  <article class="form-card">
+    {# Selecteur de theme : en JS, recharge les questions en AJAX (cf. training-quiz.js).
+       Sans JS, ce formulaire GET recharge la page sur le theme choisi (repli). #}
+    <form action="/student-space/training" method="get" class="quiz-theme-form" id="quiz-theme-form">
+      <div class="form-group">
+        <label for="theme">Theme</label>
+        <select id="theme" name="theme">
+          {% for theme in themes %}
+            <option value="{{ theme.id }}" {% if theme.id == selectedTheme.id %}selected{% endif %}>{{ theme.label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {# Bouton de repli uniquement sans JS : avec JS, le changement se fait en AJAX. #}
+      <noscript><button type="submit" class="btn">Changer de theme</button></noscript>
+    </form>
+
+    <form action="/student-space/training" method="post" id="training-quiz" data-questions-url="/student-space/training/questions">
+      <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+
+      <div data-quiz-body>
+        {% include 'student-space/_training-quiz.twig' %}
+      </div>
+
+      {# Repli sans JavaScript : bouton d'enregistrement direct. #}
+      <noscript><button type="submit" class="btn btn-primary">Enregistrer la session</button></noscript>
+    </form>
+  </article>
+
+  {% if progressCurve %}
+    <section class="chart-card">
+      <header class="chart-card__head">
+        <div>
+          <h2>Evolution de tes scores</h2>
+          <p class="muted">Taux de reussite, de la plus ancienne session a la plus recente.</p>
+        </div>
+        <div class="chart-card__stats">
+          <span class="chart-pill"><strong>{{ progressCurve.last.rate }}%</strong> derniere</span>
+          <span class="chart-pill chart-pill--soft"><strong>{{ progressCurve.average }}%</strong> moyenne</span>
+        </div>
+      </header>
+
+      <svg class="chart" viewBox="0 0 {{ progressCurve.width }} {{ progressCurve.height }}" role="img"
+           aria-label="Courbe d'evolution des taux de reussite par session">
+        <defs>
+          <linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1">
+            <stop class="chart__grad-top" offset="0%"></stop>
+            <stop class="chart__grad-bottom" offset="100%"></stop>
+          </linearGradient>
+        </defs>
+
+        {# Grille horizontale + libelles de pourcentage #}
+        {% for line in progressCurve.grid %}
+          <line class="chart__grid" x1="{{ progressCurve.padLeft }}" y1="{{ line.y }}"
+                x2="{{ progressCurve.plotRight }}" y2="{{ line.y }}"></line>
+          <text class="chart__axis-label" x="{{ progressCurve.padLeft - 10 }}" y="{{ line.y + 4 }}"
+                text-anchor="end">{{ line.value }}%</text>
+        {% endfor %}
+
+        {# Aire degradee + courbe #}
+        <path class="chart__area" d="{{ progressCurve.area }}" fill="url(#chartFill)"></path>
+        <polyline class="chart__line" points="{{ progressCurve.polyline }}"></polyline>
+
+        {# Points (le dernier est mis en valeur) #}
+        {% for point in progressCurve.points %}
+          <circle class="chart__dot {% if loop.last %}chart__dot--last{% endif %}"
+                  cx="{{ point.x }}" cy="{{ point.y }}" r="{% if loop.last %}5{% else %}3.5{% endif %}">
+            <title>Session {{ point.index }} : {{ point.rate }}%</title>
+          </circle>
+        {% endfor %}
+      </svg>
+    </section>
+  {% endif %}
+
+  <section class="page-header">
+    <h2>Progression par theme</h2>
+  </section>
+
+  <section class="theme-stats-grid">
+    {% for theme in progress.themeStats %}
+      <article class="theme-stat" style="--rate: {{ theme.rate }}">
+        <div class="theme-stat__gauge" role="img" aria-label="{{ theme.rate }} pour cent">
+          <span class="theme-stat__gauge-value">{{ theme.rate }}<small>%</small></span>
+        </div>
+        <div class="theme-stat__meta">
+          <h3>{{ theme.label }}</h3>
+          <p class="muted">{{ theme.score }}/{{ theme.total }} bonnes reponses</p>
+        </div>
+      </article>
+    {% endfor %}
+  </section>
+{% endblock %}
+
+{% block scripts %}
+  <script src="/js/training-quiz.js" defer></script>
+{% endblock %}
