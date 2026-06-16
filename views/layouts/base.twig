@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="csrf-token" content="{{ csrfToken }}">
   {# Pose le theme (clair/sombre) AVANT le rendu pour eviter tout clignotement. #}
-  <script>
+  <script nonce="{{ cspNonce }}">
     (function () {
       try {
         var t = localStorage.getItem('asm-theme');

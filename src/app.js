@@ -7,6 +7,7 @@ const helmet = require('helmet');
 
 const flash = require('./middlewares/flash');
 const csrf = require('./middlewares/csrf');
+const cspNonce = require('./middlewares/cspNonce');
 const routes = require('./routes');
 
 const app = express();
@@ -20,9 +21,30 @@ if (isProd) app.set('trust proxy', 1);
 
 // --- Securite : en-tetes HTTP (Helmet) ---
 // Ajoute X-Content-Type-Options, X-Frame-Options, Referrer-Policy, HSTS, etc.
-// CSP desactivee volontairement pour ne pas casser le dev local (HTTP) ni les
-// petits handlers onsubmit de confirmation. Une CSP stricte est une evolution V2.
-app.use(helmet({ contentSecurityPolicy: false }));
+// CSP stricte : pas de 'unsafe-inline' pour les scripts (les handlers inline ont ete
+// externalises) ; le seul script inline restant (anti-flash du theme) passe par un nonce
+// par requete. 'unsafe-inline' reste sur les styles (FullCalendar et variables CSS inline).
+app.use(cspNonce);
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        baseUri: ["'self'"],
+        objectSrc: ["'none'"],
+        frameAncestors: ["'self'"],
+        scriptSrc: ["'self'", (req, res) => `'nonce-${res.locals.cspNonce}'`],
+        styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+        fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+        imgSrc: ["'self'", 'data:'],
+        connectSrc: ["'self'"],
+        // En dev (HTTP local), on NE force PAS https sur les sous-ressources, sinon
+        // le navigateur tenterait de charger CSS/JS en https et casserait la page.
+        upgradeInsecureRequests: isProd ? [] : null,
+      },
+    },
+  })
+);
 
 // --- Moteur de vues (Twig) ---
 app.set('views', path.join(__dirname, '..', 'views'));

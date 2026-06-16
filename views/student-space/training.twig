@@ -82,6 +82,27 @@
     </section>
   {% endif %}
 
+  {% if missedQuestions|length > 0 %}
+    <section class="page-header">
+      <h2>Questions a revoir</h2>
+      <p class="muted">Les questions ratees lors de tes dernieres sessions, avec la bonne reponse.</p>
+    </section>
+
+    <div class="review-list">
+      {% for question in missedQuestions %}
+        <article class="review-card">
+          <p class="review-card__q">{{ question.text }}</p>
+          {% for choice in question.choices %}
+            {% if choice.id == question.correctChoice %}
+              <p class="review-card__answer"><span class="review-card__check" aria-hidden="true"></span>{{ choice.text }}</p>
+            {% endif %}
+          {% endfor %}
+          <p class="review-card__why">{{ question.explanation }}</p>
+        </article>
+      {% endfor %}
+    </div>
+  {% endif %}
+
   <section class="page-header">
     <h2>Progression par theme</h2>
   </section>

@@ -2,7 +2,16 @@
 const scheduleService = require('../services/scheduleService');
 const trainingService = require('../services/roadCodeTrainingService');
 const assistantService = require('../services/roadCodeAssistantService');
-const { themes, findTheme, questionsForTheme } = require('../data/roadCodeQuestions');
+const {
+  themes,
+  findTheme,
+  questionsForTheme,
+  questionsByIds,
+  randomQuestions,
+} = require('../data/roadCodeQuestions');
+
+// Parametres de l'examen blanc (calque l'ETG officiel).
+const EXAM = { count: 40, durationMin: 30, pass: 35 };
 const { toDateTimeLocal } = require('../utils/dateFormat');
 const { parseDateRange } = require('../utils/http');
 
@@ -98,6 +107,7 @@ async function trainingPage(req, res, next) {
   try {
     const selectedTheme = findTheme(req.query.theme || themes[0].id);
     const progress = await trainingService.progressForStudent(req.student.id);
+    const missedQuestions = await trainingService.recentMissedQuestions(req.student.id);
     res.render('student-space/training', {
       title: 'Entrainement code',
       student: req.student,
@@ -106,6 +116,59 @@ async function trainingPage(req, res, next) {
       questions: questionsForTheme(selectedTheme.id),
       progress,
       progressCurve: buildCurve(progress.history),
+      missedQuestions,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// GET /student-space/exam — Examen blanc : tirage aleatoire, reponses cachees, minuteur.
+async function examPage(req, res, next) {
+  try {
+    const questions = randomQuestions(EXAM.count);
+    res.render('student-space/exam', {
+      title: 'Examen blanc',
+      student: req.student,
+      questions,
+      questionIdsCsv: questions.map((q) => q.id).join(','),
+      exam: {
+        count: questions.length,
+        pass: EXAM.pass,
+        durationMin: EXAM.durationMin,
+        durationSec: EXAM.durationMin * 60,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// POST /student-space/exam — corrige l'examen, persiste, affiche la correction.
+async function exam(req, res, next) {
+  try {
+    const ids = (req.body.questionIds || '').split(',').map((s) => s.trim()).filter(Boolean);
+    const questions = questionsByIds(ids);
+    const result = trainingService.scoreSet(questions, req.body);
+    await trainingService.createSession(req.student, result, 'exam');
+
+    const review = questions.map((q) => ({
+      text: q.text,
+      explanation: q.explanation,
+      choices: q.choices,
+      correct: q.correctChoice,
+      given: result.answers[q.id] || null,
+      ok: result.answers[q.id] === q.correctChoice,
+    }));
+
+    res.render('student-space/exam-result', {
+      title: 'Resultat de l examen',
+      student: req.student,
+      result,
+      passed: result.score >= EXAM.pass,
+      pass: EXAM.pass,
+      rate: result.total > 0 ? Math.round((result.score / result.total) * 100) : 0,
+      review,
     });
   } catch (err) {
     next(err);
@@ -218,6 +281,8 @@ module.exports = {
   index,
   trainingPage,
   assistantPage,
+  examPage,
+  exam,
   events,
   training,
   trainingQuestions,

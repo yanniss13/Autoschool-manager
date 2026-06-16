@@ -57,8 +57,10 @@
       body: body.toString(),
     })
       .then(function (res) {
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        return res.json();
+        return res.json().then(function (data) {
+          if (!res.ok) throw new Error(data && data.error ? data.error : 'HTTP ' + res.status);
+          return data;
+        });
       })
       .then(function (data) {
         pending.querySelector('p').textContent = data.reply || 'Pas de reponse.';
@@ -66,8 +68,8 @@
         if (clearForm) clearForm.hidden = false;
         pending.scrollIntoView({ block: 'nearest' });
       })
-      .catch(function () {
-        pending.querySelector('p').textContent = 'Erreur : impossible de joindre l\'assistant. Reessaie.';
+      .catch(function (err) {
+        pending.querySelector('p').textContent = err.message || 'Erreur : impossible de joindre l\'assistant. Reessaie.';
       })
       .finally(function () {
         submitBtn.disabled = false;

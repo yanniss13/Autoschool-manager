@@ -1,0 +1,45 @@
+{% extends 'layouts/base.twig' %}
+
+{% block content %}
+  <section class="page-header">
+    <div>
+      <p class="eyebrow">Espace eleve</p>
+      <h1>Resultat de l'examen</h1>
+    </div>
+  </section>
+
+  <article class="exam-verdict {% if passed %}exam-verdict--pass{% else %}exam-verdict--fail{% endif %}">
+    <div class="exam-verdict__score">
+      <span class="exam-verdict__value">{{ result.score }}<small>/{{ result.total }}</small></span>
+      <span class="exam-verdict__rate">{{ rate }}%</span>
+    </div>
+    <div class="exam-verdict__meta">
+      <p class="exam-verdict__status">{% if passed %}Reussi 🎉{% else %}Non valide{% endif %}</p>
+      <p class="muted">Seuil de reussite : {{ pass }}/{{ result.total }}.</p>
+      <a href="/student-space/exam" class="btn btn-primary">Refaire un examen</a>
+    </div>
+  </article>
+
+  <section class="page-header">
+    <h2>Correction detaillee</h2>
+  </section>
+
+  {% for item in review %}
+    <fieldset class="quiz-question is-locked exam-review-item">
+      <legend>
+        <span class="exam-review-item__num {% if item.ok %}is-ok{% else %}is-ko{% endif %}">{{ loop.index }}</span>
+        {{ item.text }}
+      </legend>
+      {% for choice in item.choices %}
+        <div class="choice-row{% if choice.id == item.correct %} is-correct{% elseif choice.id == item.given %} is-wrong{% endif %}">
+          <span class="choice-row__marker" aria-hidden="true"></span>
+          <span class="choice-row__text">{{ choice.text }}</span>
+        </div>
+      {% endfor %}
+      {% if not item.given %}
+        <p class="quiz-feedback is-hint">Aucune reponse donnee.</p>
+      {% endif %}
+      <p class="quiz-explanation">{{ item.explanation }}</p>
+    </fieldset>
+  {% endfor %}
+{% endblock %}

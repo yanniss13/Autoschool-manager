@@ -67,7 +67,7 @@
             <td class="actions">
               <a href="/vehicles/{{ v.id }}/edit" class="btn btn-small">Modifier</a>
               <form action="/vehicles/{{ v.id }}/delete" method="post" class="inline-form"
-                    onsubmit="return confirm('Supprimer ce véhicule ?');">
+                    data-confirm="Supprimer ce véhicule ?">
                 <input type="hidden" name="_csrf" value="{{ csrfToken }}">
                 <button type="submit" class="btn btn-small btn-danger">Supprimer</button>
               </form>

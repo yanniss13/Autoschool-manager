@@ -4,6 +4,11 @@ model RoadCodeTrainingSession {
   score     Int
   total     Int
 
+  // "training" (entrainement par theme) ou "exam" (examen blanc).
+  mode      String @default("training")
+  // Ids des questions ratees (separes par des virgules) pour la revision ciblee.
+  missedIds String?
+
   companyId Int
   company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 

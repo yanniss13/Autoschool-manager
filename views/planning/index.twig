@@ -7,7 +7,7 @@
       {% if employees|length > 0 %}
         <form method="get" action="/planning" class="agenda-employee-picker">
           <label for="employeeId">Employé</label>
-          <select id="employeeId" name="employeeId" onchange="this.form.submit()">
+          <select id="employeeId" name="employeeId" data-autosubmit>
             {% for emp in employees %}
               <option value="{{ emp.id }}" {% if selected and selected.id == emp.id %}selected{% endif %}>
                 {{ emp.lastName }} {{ emp.firstName }}

@@ -629,4 +629,31 @@ function questionsForTheme(themeId) {
   return questions.filter((question) => question.theme === themeId);
 }
 
-module.exports = { themes, questions, findTheme, questionsForTheme };
+function questionById(id) {
+  return questions.find((question) => question.id === id) || null;
+}
+
+// Retourne les questions correspondant a une liste d'ids, dans l'ordre demande.
+function questionsByIds(ids) {
+  return (ids || []).map((id) => questionById(id)).filter(Boolean);
+}
+
+// Tire `count` questions au hasard (melange de Fisher-Yates sur une copie).
+function randomQuestions(count) {
+  const pool = [...questions];
+  for (let i = pool.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  return pool.slice(0, Math.min(count, pool.length));
+}
+
+module.exports = {
+  themes,
+  questions,
+  findTheme,
+  questionsForTheme,
+  questionById,
+  questionsByIds,
+  randomQuestions,
+};

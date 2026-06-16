@@ -386,6 +386,21 @@ async function runTests() {
   check('Resume progression sur accueil (2 sessions)', r.status === 200 && /2 session\(s\)/.test(r.text), `status=${r.status}`);
   r = await studentClient('/student-space/training');
   check('Courbe de progression sur page entrainement', r.status === 200 && /chart__line/.test(r.text), `status=${r.status}`);
+  check('Questions a revoir affichees (ratees des sessions)', r.status === 200 && /review-card/.test(r.text), `status=${r.status}`);
+
+  // Examen blanc : page + correction.
+  r = await studentClient('/student-space/exam');
+  check('Page examen blanc -> 200 avec formulaire', r.status === 200 && /Examen blanc/.test(r.text) && /id="exam-form"/.test(r.text), `status=${r.status}`);
+  r = await studentClient('/student-space/exam', {
+    method: 'POST',
+    body: { questionIds: 'priorites-1,vitesse-1', 'answer_priorites-1': 'b', 'answer_vitesse-1': 'a' },
+  });
+  check(
+    'Examen blanc corrige (verdict + correction)',
+    r.status === 200 && /exam-verdict/.test(r.text) && /Correction detaillee/.test(r.text),
+    `status=${r.status}`
+  );
+
   r = await studentClient('/student-space/assistant/clear', { method: 'POST', body: {} });
   check('Effacement du fil assistant', r.status === 302 && r.location === '/student-space/assistant', `status=${r.status}`);
   r = await studentClient('/dashboard');

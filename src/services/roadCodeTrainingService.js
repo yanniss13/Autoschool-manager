@@ -1,6 +1,6 @@
 // Services d'entrainement au code de la route.
 const prisma = require('../config/prisma');
-const { themes, questionsForTheme } = require('../data/roadCodeQuestions');
+const { themes, questionsForTheme, questionsByIds } = require('../data/roadCodeQuestions');
 
 function normalizeAnswers(body) {
   const answers = {};
@@ -23,32 +23,37 @@ function normalizeAnswers(body) {
   return answers;
 }
 
-function scoreTheme(themeId, body) {
-  const questions = questionsForTheme(themeId);
+// Corrige un ensemble de questions a partir des reponses du corps de requete.
+// Renvoie le score, le detail et la liste des ids rates (non repondu = rate).
+function scoreSet(questions, body) {
   const answers = normalizeAnswers(body);
+  const missed = [];
   let score = 0;
 
   questions.forEach((question) => {
-    if (answers[question.id] === question.correctChoice) score += 1;
+    const given = answers[question.id];
+    if (given === question.correctChoice) score += 1;
+    else missed.push(question.id);
   });
 
-  return {
-    theme: themeId,
-    score,
-    total: questions.length,
-    answers,
-    questions,
-  };
+  return { score, total: questions.length, answers, missedIds: missed, questions };
 }
 
-function createSession(student, result) {
+function scoreTheme(themeId, body) {
+  return { theme: themeId, ...scoreSet(questionsForTheme(themeId), body) };
+}
+
+// Persiste un resume de session (entrainement ou examen) avec les questions ratees.
+function createSession(student, result, mode = 'training') {
   return prisma.roadCodeTrainingSession.create({
     data: {
       companyId: student.companyId,
       studentId: student.id,
-      theme: result.theme,
+      theme: result.theme || mode,
       score: result.score,
       total: result.total,
+      mode,
+      missedIds: result.missedIds && result.missedIds.length ? result.missedIds.join(',') : null,
     },
   });
 }
@@ -130,9 +135,34 @@ async function progressForStudent(studentId) {
   };
 }
 
+// Agrege les questions ratees sur les dernieres sessions (dedupliquees, recentes d'abord).
+async function recentMissedQuestions(studentId, take = 12) {
+  const sessions = await prisma.roadCodeTrainingSession.findMany({
+    where: { studentId, missedIds: { not: null } },
+    orderBy: { createdAt: 'desc' },
+    take: 20,
+  });
+
+  const seen = new Set();
+  const orderedIds = [];
+  sessions.forEach((session) => {
+    (session.missedIds || '').split(',').forEach((id) => {
+      const trimmed = id.trim();
+      if (trimmed && !seen.has(trimmed)) {
+        seen.add(trimmed);
+        orderedIds.push(trimmed);
+      }
+    });
+  });
+
+  return questionsByIds(orderedIds.slice(0, take));
+}
+
 module.exports = {
+  scoreSet,
   scoreTheme,
   createSession,
   recentSessions,
   progressForStudent,
+  recentMissedQuestions,
 };

@@ -27,7 +27,7 @@
             <td class="actions">
               <a href="/students/{{ s.id }}/edit" class="btn btn-small">Modifier</a>
               <form action="/students/{{ s.id }}/delete" method="post" class="inline-form"
-                    onsubmit="return confirm('Supprimer cet élève ? Ses créneaux seront aussi supprimés.');">
+                    data-confirm="Supprimer cet élève ? Ses créneaux seront aussi supprimés.">
                 <input type="hidden" name="_csrf" value="{{ csrfToken }}">
                 <button type="submit" class="btn btn-small btn-danger">Supprimer</button>
               </form>

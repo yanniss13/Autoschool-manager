@@ -54,4 +54,18 @@
 
     requestAnimationFrame(step);
   });
+
+  // --- Confirmation avant envoi (remplace les onsubmit inline, compatible CSP stricte) ---
+  document.querySelectorAll('form[data-confirm]').forEach(function (form) {
+    form.addEventListener('submit', function (event) {
+      if (!window.confirm(form.dataset.confirm)) event.preventDefault();
+    });
+  });
+
+  // --- Auto-soumission au changement (remplace onchange="this.form.submit()") ---
+  document.querySelectorAll('[data-autosubmit]').forEach(function (el) {
+    el.addEventListener('change', function () {
+      if (el.form) el.form.submit();
+    });
+  });
 })();
