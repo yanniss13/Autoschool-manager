@@ -57,8 +57,14 @@
       body: body.toString(),
     })
       .then(function (res) {
+        // En cas d'erreur serveur (500), la reponse est du HTML, pas du JSON :
+        // on evite un message de parsing cryptique et on affiche un texte clair.
+        const ct = res.headers.get('content-type') || '';
+        if (ct.indexOf('application/json') === -1) {
+          throw new Error('Assistant momentanement indisponible. Reessaie dans un instant.');
+        }
         return res.json().then(function (data) {
-          if (!res.ok) throw new Error(data && data.error ? data.error : 'HTTP ' + res.status);
+          if (!res.ok) throw new Error(data && data.error ? data.error : 'Erreur (' + res.status + ').');
           return data;
         });
       })

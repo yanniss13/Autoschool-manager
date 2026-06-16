@@ -12,12 +12,28 @@
   if (total === 0) return;
 
   const currentEl = form.querySelector('[data-exam-current]');
+  const answeredEl = form.querySelector('[data-exam-answered]');
   const barEl = form.querySelector('[data-exam-bar]');
   const timerEl = form.querySelector('[data-exam-timer]');
   const prevBtn = form.querySelector('[data-exam-prev]');
   const nextBtn = form.querySelector('[data-exam-next]');
 
   let index = 0;
+  let timedOut = false;
+
+  // Nombre de questions ayant une reponse cochee.
+  function answeredCount() {
+    return questions.filter(function (q) {
+      return q.querySelector('input[type="radio"]:checked');
+    }).length;
+  }
+
+  function refreshAnswered() {
+    if (answeredEl) answeredEl.textContent = String(answeredCount());
+  }
+
+  form.addEventListener('change', refreshAnswered);
+  refreshAnswered();
 
   function show(i) {
     questions.forEach(function (q, qi) {
@@ -40,12 +56,19 @@
     });
   }
 
-  show(0);
+  // --- Demarrage manuel + minuteur ---
+  // L'examen (et donc le chrono) ne demarre qu'au clic sur "Demarrer", pour ne pas
+  // lancer le compte a rebours des l'arrivee sur la page.
+  const startWrap = form.querySelector('[data-exam-start]');
+  const startBtn = form.querySelector('[data-exam-start-btn]');
+  const examBody = form.querySelector('[data-exam-body]');
 
-  // --- Minuteur ---
-  let remaining = parseInt(form.dataset.duration, 10);
-  if (!Number.isNaN(remaining) && remaining > 0 && timerEl) {
-    let submitted = false;
+  let tick = null;
+  const duration = parseInt(form.dataset.duration, 10);
+
+  function startTimer() {
+    if (Number.isNaN(duration) || duration <= 0 || !timerEl) return;
+    let remaining = duration;
 
     const render = function () {
       const m = Math.floor(remaining / 60);
@@ -55,21 +78,43 @@
     };
 
     render();
-    const tick = setInterval(function () {
+    tick = setInterval(function () {
       remaining -= 1;
       if (remaining <= 0) {
         clearInterval(tick);
+        tick = null;
         render();
-        if (!submitted) { submitted = true; form.submit(); } // temps ecoule -> correction
+        timedOut = true;
+        form.submit(); // temps ecoule -> correction immediate (sans confirmation)
         return;
       }
       render();
     }, 1000);
-
-    // On evite le double envoi si l'eleve termine manuellement.
-    form.addEventListener('submit', function () {
-      submitted = true;
-      clearInterval(tick);
-    });
   }
+
+  function startExam() {
+    if (startWrap) startWrap.hidden = true;
+    if (examBody) examBody.hidden = false;
+    show(0);
+    refreshAnswered();
+    startTimer();
+  }
+
+  if (startBtn) {
+    startBtn.addEventListener('click', startExam);
+  } else {
+    startExam(); // pas de bouton (cas limite) : on demarre directement
+  }
+
+  // Garde a la soumission manuelle : prevenir si des questions restent vides.
+  // (Le temps ecoule passe par form.submit() -> n'emet pas l'evenement, donc pas de confirmation.)
+  form.addEventListener('submit', function (event) {
+    if (!timedOut && answeredCount() < total) {
+      if (!window.confirm('Il reste des questions sans reponse. Terminer l\'examen quand meme ?')) {
+        event.preventDefault();
+        return;
+      }
+    }
+    if (tick) { clearInterval(tick); tick = null; }
+  });
 })();

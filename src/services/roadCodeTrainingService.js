@@ -90,8 +90,11 @@ function computeStreak(sessions) {
 }
 
 async function progressForStudent(studentId) {
+  // On ne compte ici que les sessions d'ENTRAINEMENT (revision par theme). Les examens
+  // blancs (mode 'exam') ont leur propre page de resultat et ne sont pas comparables
+  // (en revision les reponses sont visibles) : les melanger fausserait la courbe.
   const sessions = await prisma.roadCodeTrainingSession.findMany({
-    where: { studentId },
+    where: { studentId, mode: 'training' },
     orderBy: { createdAt: 'desc' },
   });
 

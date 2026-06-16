@@ -31,7 +31,7 @@ async function chat(messages) {
         model: (process.env.GROQ_MODEL || DEFAULT_MODEL).trim(),
         messages,
         temperature: 0.3,
-        max_tokens: 400,
+        max_tokens: 600,
       }),
       signal: controller.signal,
     });

@@ -34,8 +34,10 @@ app.use(
         objectSrc: ["'none'"],
         frameAncestors: ["'self'"],
         scriptSrc: ["'self'", (req, res) => `'nonce-${res.locals.cspNonce}'`],
-        styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
-        fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+        // 'unsafe-inline' reste requis pour les styles (FullCalendar + variables CSS inline).
+        // Police auto-hebergee -> plus besoin d'autoriser Google Fonts.
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        fontSrc: ["'self'"],
         imgSrc: ["'self'", 'data:'],
         connectSrc: ["'self'"],
         // En dev (HTTP local), on NE force PAS https sur les sous-ressources, sinon
