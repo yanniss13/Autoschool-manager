@@ -1,9 +1,9 @@
 <input type="hidden" name="_csrf" value="{{ csrfToken }}">
 
 <div class="form-group">
-  <label for="employeeId">Employe</label>
+  <label for="employeeId">Employé</label>
   <select id="employeeId" name="employeeId" required>
-    <option value="">Choisir un employe</option>
+    <option value="">Choisir un employé</option>
     {% for employee in employees %}
       <option value="{{ employee.id }}" {% if values.employeeId == employee.id %}selected{% endif %}>
         {{ employee.lastName }} {{ employee.firstName }} - {{ employee.email }}
@@ -14,9 +14,9 @@
 </div>
 
 <div class="form-group">
-  <label for="studentId">Eleve</label>
+  <label for="studentId">Élève</label>
   <select id="studentId" name="studentId" required>
-    <option value="">Choisir un eleve</option>
+    <option value="">Choisir un élève</option>
     {% for student in students %}
       <option value="{{ student.id }}" {% if values.studentId == student.id %}selected{% endif %}>
         {{ student.lastName }} {{ student.firstName }}{% if student.email %} - {{ student.email }}{% endif %}
@@ -24,7 +24,7 @@
     {% endfor %}
   </select>
   {% if errors.studentId %}<p class="field-error">{{ errors.studentId }}</p>{% endif %}
-  {% if students|length == 0 %}<p class="muted">Aucun eleve. <a href="/students/new">Creez un eleve</a> d'abord.</p>{% endif %}
+  {% if students|length == 0 %}<p class="muted">Aucun élève. <a href="/students/new">Créez un élève</a> d'abord.</p>{% endif %}
 </div>
 
 <div class="form-group">
@@ -34,7 +34,7 @@
 </div>
 
 <div class="form-group">
-  <label for="startsAt">Debut</label>
+  <label for="startsAt">Début</label>
   <input type="datetime-local" id="startsAt" name="startsAt" value="{{ values.startsAt|default('') }}" required>
   {% if errors.startsAt %}<p class="field-error">{{ errors.startsAt }}</p>{% endif %}
 </div>

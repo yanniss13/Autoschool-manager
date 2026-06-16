@@ -131,7 +131,7 @@ async function newForm(req, res, next) {
       values.endsAt = `${date}T${String(endHour).padStart(2, '0')}:00`;
     }
     await renderForm(req, res, 'planning/new', 200, {
-      title: 'Nouveau creneau',
+      title: 'Nouveau créneau',
       errors: {},
       values,
     });
@@ -148,21 +148,21 @@ async function create(req, res, next) {
 
     if (isValid) {
       const employee = await employeeService.findOwnedById(req.company.id, value.employeeId);
-      if (!employee) formErrors.employeeId = 'Employe introuvable.';
+      if (!employee) formErrors.employeeId = 'Employé introuvable.';
       const student = await studentService.findOwnedById(req.company.id, value.studentId);
-      if (!student) formErrors.studentId = 'Eleve introuvable.';
+      if (!student) formErrors.studentId = 'Élève introuvable.';
     }
 
     if (Object.keys(formErrors).length > 0) {
       return renderForm(req, res, 'planning/new', 400, {
-        title: 'Nouveau creneau',
+        title: 'Nouveau créneau',
         errors: formErrors,
         values: req.body,
       });
     }
 
     await scheduleService.createForCompany(req.company.id, value);
-    req.flash('success', 'Creneau cree avec succes.');
+    req.flash('success', 'Créneau créé avec succès.');
     res.redirect('/planning');
   } catch (err) {
     next(err);
@@ -179,7 +179,7 @@ async function editForm(req, res, next) {
     if (!slot) return notFound(res);
 
     return renderForm(req, res, 'planning/edit', 200, {
-      title: 'Modifier un creneau',
+      title: 'Modifier un créneau',
       errors: {},
       slot: decorateSlot(slot),
       values: valuesFromSlot(slot),
@@ -203,14 +203,14 @@ async function update(req, res, next) {
 
     if (isValid) {
       const employee = await employeeService.findOwnedById(req.company.id, value.employeeId);
-      if (!employee) formErrors.employeeId = 'Employe introuvable.';
+      if (!employee) formErrors.employeeId = 'Employé introuvable.';
       const student = await studentService.findOwnedById(req.company.id, value.studentId);
-      if (!student) formErrors.studentId = 'Eleve introuvable.';
+      if (!student) formErrors.studentId = 'Élève introuvable.';
     }
 
     if (Object.keys(formErrors).length > 0) {
       return renderForm(req, res, 'planning/edit', 400, {
-        title: 'Modifier un creneau',
+        title: 'Modifier un créneau',
         errors: formErrors,
         slot: decorateSlot(slot),
         values: req.body,
@@ -218,7 +218,7 @@ async function update(req, res, next) {
     }
 
     await scheduleService.updateOwned(req.company.id, id, value);
-    req.flash('success', 'Creneau mis a jour.');
+    req.flash('success', 'Créneau mis à jour.');
     res.redirect('/planning');
   } catch (err) {
     next(err);
@@ -235,7 +235,7 @@ async function destroy(req, res, next) {
     if (!slot) return notFound(res);
 
     await scheduleService.deleteOwned(req.company.id, id);
-    req.flash('success', 'Creneau supprime.');
+    req.flash('success', 'Créneau supprimé.');
     res.redirect('/planning');
   } catch (err) {
     next(err);

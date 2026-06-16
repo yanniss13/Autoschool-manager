@@ -4,7 +4,7 @@ module.exports = function requireEmployeeAuth(req, res, next) {
     req.session && req.session.authRole === 'employee' && req.session.employeeId;
 
   if (!isEmployeeSession) {
-    req.flash('error', 'Veuillez vous connecter a votre espace employe.');
+    req.flash('error', 'Veuillez vous connecter à votre espace employé.');
     return res.redirect('/employee-login');
   }
 

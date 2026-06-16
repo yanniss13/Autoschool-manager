@@ -19,7 +19,7 @@ function validateStudentLogin(body) {
   if (!password) {
     errors.password = 'Le mot de passe est obligatoire.';
   } else if (Buffer.byteLength(password, 'utf8') > PASSWORD_MAX) {
-    errors.password = `Le mot de passe ne doit pas depasser ${PASSWORD_MAX} caracteres.`;
+    errors.password = `Le mot de passe ne doit pas dépasser ${PASSWORD_MAX} caractères.`;
   }
 
   return {

@@ -3,9 +3,9 @@
 {% block content %}
   <section class="page-header">
     <div>
-      <p class="eyebrow">Espace eleve</p>
+      <p class="eyebrow">Espace élève</p>
       <h1>Examen blanc</h1>
-      <p class="muted">{{ exam.count }} questions &middot; {{ exam.durationMin }} min &middot; reussite a {{ exam.pass }}/{{ exam.count }}. Les reponses sont cachees jusqu'a la correction finale.</p>
+      <p class="muted">{{ exam.count }} questions &middot; {{ exam.durationMin }} min &middot; réussite à {{ exam.pass }}/{{ exam.count }}. Les réponses sont cachées jusqu'à la correction finale.</p>
     </div>
   </section>
 
@@ -13,35 +13,52 @@
     <input type="hidden" name="_csrf" value="{{ csrfToken }}">
     <input type="hidden" name="questionIds" value="{{ questionIdsCsv }}">
 
-    <div class="exam-bar">
-      <span class="exam-timer" data-exam-timer aria-live="polite">{{ exam.durationMin }}:00</span>
-      <span class="exam-counter">Question <span data-exam-current>1</span> / {{ questions|length }}</span>
-      <div class="quiz-progress__track exam-bar__track" aria-hidden="true">
-        <span class="quiz-progress__bar" data-exam-bar></span>
+    {# Ecran de demarrage : le chrono ne se lance qu'au clic (cf. exam.js). #}
+    <div class="exam-start" data-exam-start>
+      <div class="exam-start__card">
+        <h2>Prêt à commencer ?</h2>
+        <ul class="exam-start__facts">
+          <li><strong>{{ questions|length }}</strong> questions</li>
+          <li><strong>{{ exam.durationMin }} min</strong> chronométrées</li>
+          <li>Réussite à <strong>{{ exam.pass }}/{{ questions|length }}</strong></li>
+        </ul>
+        <p class="muted">Le minuteur démarre au clic et l'examen se corrige automatiquement à la fin du temps.</p>
+        <button type="button" class="btn btn-primary" data-exam-start-btn>Démarrer l'examen</button>
       </div>
     </div>
 
-    {% for question in questions %}
-      <fieldset class="quiz-question exam-question" {% if not loop.first %}hidden{% endif %}>
-        <legend>{{ loop.index }}. {{ question.text }}</legend>
-        {% for choice in question.choices %}
-          <label class="choice-row" data-choice="{{ choice.id }}">
-            <input type="radio" name="answer_{{ question.id }}" value="{{ choice.id }}">
-            <span class="choice-row__marker" aria-hidden="true"></span>
-            <span class="choice-row__text">{{ choice.text }}</span>
-          </label>
-        {% endfor %}
-      </fieldset>
-    {% endfor %}
+    <div data-exam-body hidden>
+      <div class="exam-bar">
+        <span class="exam-timer" data-exam-timer aria-live="polite">{{ exam.durationMin }}:00</span>
+        <span class="exam-counter">Question <span data-exam-current>1</span> / {{ questions|length }}</span>
+        <span class="exam-counter">Répondues <span data-exam-answered>0</span> / {{ questions|length }}</span>
+        <div class="quiz-progress__track exam-bar__track" aria-hidden="true">
+          <span class="quiz-progress__bar" data-exam-bar></span>
+        </div>
+      </div>
 
-    <div class="quiz-actions">
-      <button type="button" class="btn" data-exam-prev hidden>Precedent</button>
-      <button type="button" class="btn btn-primary" data-exam-next>Question suivante</button>
-      <button type="submit" class="btn btn-primary" data-exam-finish>Terminer l'examen</button>
+      {% for question in questions %}
+        <fieldset class="quiz-question exam-question" {% if not loop.first %}hidden{% endif %}>
+          <legend>{{ loop.index }}. {{ question.text }}</legend>
+          {% for choice in question.choices %}
+            <label class="choice-row" data-choice="{{ choice.id }}">
+              <input type="radio" name="answer_{{ question.id }}" value="{{ choice.id }}">
+              <span class="choice-row__marker" aria-hidden="true"></span>
+              <span class="choice-row__text">{{ choice.text }}</span>
+            </label>
+          {% endfor %}
+        </fieldset>
+      {% endfor %}
+
+      <div class="quiz-actions">
+        <button type="button" class="btn" data-exam-prev hidden>Précédent</button>
+        <button type="button" class="btn btn-primary" data-exam-next>Question suivante</button>
+        <button type="submit" class="btn btn-primary" data-exam-finish>Terminer l'examen</button>
+      </div>
     </div>
 
-    {# Repli sans JavaScript : on enregistre directement (pas de minuteur). #}
-    <noscript><p class="muted">Active JavaScript pour le minuteur et la navigation question par question.</p></noscript>
+    {# Repli sans JavaScript : l'examen necessite JS (minuteur + navigation). #}
+    <noscript><p class="muted">Active JavaScript pour passer l'examen (minuteur et navigation question par question).</p></noscript>
   </form>
 {% endblock %}
 

@@ -3,37 +3,37 @@
   <nav class="navbar-links">
     {% if currentCompany %}
       <a href="/dashboard">Tableau de bord</a>
-      <a href="/employees">Employes</a>
-      <a href="/vehicles">Vehicules</a>
-      <a href="/students">Eleves</a>
+      <a href="/employees">Employés</a>
+      <a href="/vehicles">Véhicules</a>
+      <a href="/students">Élèves</a>
       <a href="/planning">Planning</a>
       <form action="/logout" method="post" class="inline-form">
         <input type="hidden" name="_csrf" value="{{ csrfToken }}">
-        <button type="submit" class="link-button">Deconnexion</button>
+        <button type="submit" class="link-button">Déconnexion</button>
       </form>
     {% elseif currentEmployee %}
       <a href="/employee-space">Mon espace</a>
       <form action="/employee-logout" method="post" class="inline-form">
         <input type="hidden" name="_csrf" value="{{ csrfToken }}">
-        <button type="submit" class="link-button">Deconnexion</button>
+        <button type="submit" class="link-button">Déconnexion</button>
       </form>
     {% elseif currentStudent %}
       <a href="/student-space">Accueil</a>
-      <a href="/student-space/training">Entrainement</a>
+      <a href="/student-space/training">Entraînement</a>
       <a href="/student-space/exam">Examen blanc</a>
       <a href="/student-space/assistant">Assistant</a>
       <form action="/student-logout" method="post" class="inline-form">
         <input type="hidden" name="_csrf" value="{{ csrfToken }}">
-        <button type="submit" class="link-button">Deconnexion</button>
+        <button type="submit" class="link-button">Déconnexion</button>
       </form>
     {% else %}
-      <a href="/login">Connexion gerant</a>
-      <a href="/employee-login">Connexion employe</a>
-      <a href="/student-login">Connexion eleve</a>
+      <a href="/login">Connexion gérant</a>
+      <a href="/employee-login">Connexion employé</a>
+      <a href="/student-login">Connexion élève</a>
       <a href="/register">Inscription</a>
     {% endif %}
     <button type="button" id="theme-toggle" class="theme-toggle"
-            title="Theme clair / sombre"
-            aria-label="Basculer entre le theme clair et le theme sombre"></button>
+            title="Thème clair / sombre"
+            aria-label="Basculer entre le thème clair et le thème sombre"></button>
   </nav>
 </header>

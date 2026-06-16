@@ -3,9 +3,9 @@
 {% block content %}
   <section class="page-header">
     <div>
-      <p class="eyebrow">Espace eleve</p>
-      <h1>Entrainement code</h1>
-      <p class="muted">Reponds question par question : valide, decouvre la correction, puis passe a la suivante.</p>
+      <p class="eyebrow">Espace élève</p>
+      <h1>Entraînement code</h1>
+      <p class="muted">Réponds question par question : valide, découvre la correction, puis passe à la suivante.</p>
     </div>
   </section>
 
@@ -14,7 +14,7 @@
        Sans JS, ce formulaire GET recharge la page sur le theme choisi (repli). #}
     <form action="/student-space/training" method="get" class="quiz-theme-form" id="quiz-theme-form">
       <div class="form-group">
-        <label for="theme">Theme</label>
+        <label for="theme">Thème</label>
         <select id="theme" name="theme">
           {% for theme in themes %}
             <option value="{{ theme.id }}" {% if theme.id == selectedTheme.id %}selected{% endif %}>{{ theme.label }}</option>
@@ -22,7 +22,7 @@
         </select>
       </div>
       {# Bouton de repli uniquement sans JS : avec JS, le changement se fait en AJAX. #}
-      <noscript><button type="submit" class="btn">Changer de theme</button></noscript>
+      <noscript><button type="submit" class="btn">Changer de thème</button></noscript>
     </form>
 
     <form action="/student-space/training" method="post" id="training-quiz" data-questions-url="/student-space/training/questions">
@@ -41,17 +41,17 @@
     <section class="chart-card">
       <header class="chart-card__head">
         <div>
-          <h2>Evolution de tes scores</h2>
-          <p class="muted">Taux de reussite, de la plus ancienne session a la plus recente.</p>
+          <h2>Évolution de tes scores</h2>
+          <p class="muted">Taux de réussite, de la plus ancienne session à la plus récente.</p>
         </div>
         <div class="chart-card__stats">
-          <span class="chart-pill"><strong>{{ progressCurve.last.rate }}%</strong> derniere</span>
+          <span class="chart-pill"><strong>{{ progressCurve.last.rate }}%</strong> dernière</span>
           <span class="chart-pill chart-pill--soft"><strong>{{ progressCurve.average }}%</strong> moyenne</span>
         </div>
       </header>
 
       <svg class="chart" viewBox="0 0 {{ progressCurve.width }} {{ progressCurve.height }}" role="img"
-           aria-label="Courbe d'evolution des taux de reussite par session">
+           aria-label="Courbe d'évolution des taux de réussite par session">
         <defs>
           <linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1">
             <stop class="chart__grad-top" offset="0%"></stop>
@@ -84,8 +84,8 @@
 
   {% if missedQuestions|length > 0 %}
     <section class="page-header">
-      <h2>Questions a revoir</h2>
-      <p class="muted">Les questions ratees lors de tes dernieres sessions, avec la bonne reponse.</p>
+      <h2>Questions à revoir</h2>
+      <p class="muted">Les questions ratées lors de tes dernières sessions, avec la bonne réponse.</p>
     </section>
 
     <div class="review-list">
@@ -104,7 +104,7 @@
   {% endif %}
 
   <section class="page-header">
-    <h2>Progression par theme</h2>
+    <h2>Progression par thème</h2>
   </section>
 
   <section class="theme-stats-grid">
@@ -115,7 +115,7 @@
         </div>
         <div class="theme-stat__meta">
           <h3>{{ theme.label }}</h3>
-          <p class="muted">{{ theme.score }}/{{ theme.total }} bonnes reponses</p>
+          <p class="muted">{{ theme.score }}/{{ theme.total }} bonnes réponses</p>
         </div>
       </article>
     {% endfor %}

@@ -8,7 +8,7 @@
 </div>
 
 <div class="form-group">
-  <label for="firstName">Prenom</label>
+  <label for="firstName">Prénom</label>
   <input type="text" id="firstName" name="firstName" value="{{ values.firstName|default('') }}" maxlength="100" required>
   {% if errors.firstName %}<p class="field-error">{{ errors.firstName }}</p>{% endif %}
 </div>
@@ -29,7 +29,7 @@
 </div>
 
 <div class="form-group">
-  <label for="phone">Telephone <span class="muted">(optionnel)</span></label>
+  <label for="phone">Téléphone <span class="muted">(optionnel)</span></label>
   <input type="tel" id="phone" name="phone" value="{{ values.phone|default('') }}" maxlength="20" autocomplete="tel">
   {% if errors.phone %}<p class="field-error">{{ errors.phone }}</p>{% endif %}
 </div>

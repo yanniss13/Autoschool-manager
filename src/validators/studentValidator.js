@@ -43,9 +43,9 @@ function validateStudent(body, { isCreate } = { isCreate: false }) {
     if (!password) {
       errors.password = 'Le mot de passe est obligatoire.';
     } else if (password.length < PASSWORD_MIN) {
-      errors.password = `Le mot de passe doit contenir au moins ${PASSWORD_MIN} caracteres.`;
+      errors.password = `Le mot de passe doit contenir au moins ${PASSWORD_MIN} caractères.`;
     } else if (Buffer.byteLength(password, 'utf8') > PASSWORD_MAX) {
-      errors.password = `Le mot de passe ne doit pas depasser ${PASSWORD_MAX} caracteres.`;
+      errors.password = `Le mot de passe ne doit pas dépasser ${PASSWORD_MAX} caractères.`;
     }
   }
 

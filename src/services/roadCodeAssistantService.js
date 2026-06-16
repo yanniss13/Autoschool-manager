@@ -6,47 +6,47 @@ const groqClient = require('./groqClient');
 
 // Consigne donnee au modele : cantonner les reponses au code de la route francais.
 const SYSTEM_PROMPT =
-  "Tu es un moniteur d'auto-ecole francais. Tu reponds uniquement aux questions sur le code " +
-  'de la route et la conduite en France. Reponds en francais, de facon courte, claire et ' +
-  'pedagogique (3 a 5 phrases maximum). Si la question est hors sujet, invite poliment ' +
-  "l'eleve a poser une question sur le code de la route.";
+  "Tu es un moniteur d'auto-école français. Tu réponds uniquement aux questions sur le code " +
+  'de la route et la conduite en France. Réponds en français, de façon courte, claire et ' +
+  'pédagogique (3 à 5 phrases maximum). Si la question est hors sujet, invite poliment ' +
+  "l'élève à poser une question sur le code de la route.";
 
 // Base locale de repli : associations mots-cles -> reponse.
 const localAnswers = [
   {
     keywords: ['priorite', 'priorites', 'droite', 'intersection', 'ceder'],
     reply:
-      'Pour les priorites, retiens la base : sans panneau, feu ou marquage contraire, tu laisses passer le vehicule qui vient de ta droite. Un STOP ou un cedez-le-passage annule cette priorite.',
+      'Pour les priorités, retiens la base : sans panneau, feu ou marquage contraire, tu laisses passer le véhicule qui vient de ta droite. Un STOP ou un cédez-le-passage annule cette priorité.',
   },
   {
     keywords: ['vitesse', 'km', 'limitation', 'rapide'],
     reply:
-      'La vitesse depend du lieu et des panneaux. En agglomeration, la regle generale est 50 km/h. Hors agglomeration, respecte toujours les panneaux, la meteo et la visibilite.',
+      'La vitesse dépend du lieu et des panneaux. En agglomération, la règle générale est 50 km/h. Hors agglomération, respecte toujours les panneaux, la météo et la visibilité.',
   },
   {
     keywords: ['panneau', 'signalisation', 'triangle', 'rond', 'feu'],
     reply:
-      'Les panneaux triangulaires a bord rouge annoncent un danger. Les panneaux ronds indiquent souvent une obligation ou une interdiction selon leur couleur et leur symbole.',
+      'Les panneaux triangulaires à bord rouge annoncent un danger. Les panneaux ronds indiquent souvent une obligation ou une interdiction selon leur couleur et leur symbole.',
   },
   {
     keywords: ['stationnement', 'arret', 'garer', 'ligne jaune'],
     reply:
-      'Pour le stationnement, surveille les panneaux et le marquage au sol. Une ligne jaune continue interdit l arret et le stationnement ; une ligne jaune discontinue interdit le stationnement.',
+      "Pour le stationnement, surveille les panneaux et le marquage au sol. Une ligne jaune continue interdit l'arrêt et le stationnement ; une ligne jaune discontinue interdit le stationnement.",
   },
   {
     keywords: ['securite', 'distance', 'freinage', 'ceinture', 'angle mort'],
     reply:
-      'La securite commence par l anticipation : garde au moins deux secondes avec le vehicule devant, adapte ta vitesse et verifie retroviseurs + angles morts avant toute manoeuvre.',
+      "La sécurité commence par l'anticipation : garde au moins deux secondes avec le véhicule devant, adapte ta vitesse et vérifie rétroviseurs + angles morts avant toute manœuvre.",
   },
   {
     keywords: ['alcool', 'alcoolemie', 'drogue', 'telephone', 'portable'],
     reply:
-      "Au volant, le taux d'alcool legal est de 0,5 g/L de sang (0,2 g/L en permis probatoire). Le telephone tenu en main et les stupefiants sont interdits et fortement sanctionnes.",
+      "Au volant, le taux d'alcool légal est de 0,5 g/L de sang (0,2 g/L en permis probatoire). Le téléphone tenu en main et les stupéfiants sont interdits et fortement sanctionnés.",
   },
   {
     keywords: ['rond-point', 'rond point', 'giratoire', 'carrefour'],
     reply:
-      'A un carrefour a sens giratoire, tu cedes le passage aux usagers deja engages sur l anneau. Mets ton clignotant a droite juste avant de sortir.',
+      "À un carrefour à sens giratoire, tu cèdes le passage aux usagers déjà engagés sur l'anneau. Mets ton clignotant à droite juste avant de sortir.",
   },
 ];
 
@@ -54,7 +54,7 @@ const localAnswers = [
 function localAnswer(message) {
   const normalized = (message || '').trim().toLowerCase();
   if (!normalized) {
-    return 'Pose-moi une question sur les priorites, la signalisation, la vitesse, le stationnement, la securite ou les ronds-points.';
+    return 'Pose-moi une question sur les priorités, la signalisation, la vitesse, le stationnement, la sécurité ou les ronds-points.';
   }
 
   const match = localAnswers.find((entry) =>
@@ -63,7 +63,7 @@ function localAnswer(message) {
 
   if (match) return match.reply;
 
-  return "Je peux t'aider sur les grands themes du code : priorites, panneaux, vitesse, stationnement, securite, alcool et ronds-points. Reformule ta question avec l'un de ces themes pour une reponse plus precise.";
+  return "Je peux t'aider sur les grands thèmes du code : priorités, panneaux, vitesse, stationnement, sécurité, alcool et ronds-points. Reformule ta question avec l'un de ces thèmes pour une réponse plus précise.";
 }
 
 // Construit la liste de messages envoyee a Groq : consigne + historique + nouvelle question.

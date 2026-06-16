@@ -3,8 +3,8 @@
 {% block content %}
   <section class="page-header">
     <div>
-      <p class="eyebrow">Espace eleve</p>
-      <h1>Resultat de l'examen</h1>
+      <p class="eyebrow">Espace élève</p>
+      <h1>Résultat de l'examen</h1>
     </div>
   </section>
 
@@ -14,14 +14,14 @@
       <span class="exam-verdict__rate">{{ rate }}%</span>
     </div>
     <div class="exam-verdict__meta">
-      <p class="exam-verdict__status">{% if passed %}Reussi 🎉{% else %}Non valide{% endif %}</p>
-      <p class="muted">Seuil de reussite : {{ pass }}/{{ result.total }}.</p>
+      <p class="exam-verdict__status">{% if passed %}Réussi 🎉{% else %}Non validé{% endif %}</p>
+      <p class="muted">Seuil de réussite : {{ pass }}/{{ result.total }}.</p>
       <a href="/student-space/exam" class="btn btn-primary">Refaire un examen</a>
     </div>
   </article>
 
   <section class="page-header">
-    <h2>Correction detaillee</h2>
+    <h2>Correction détaillée</h2>
   </section>
 
   {% for item in review %}
@@ -37,7 +37,7 @@
         </div>
       {% endfor %}
       {% if not item.given %}
-        <p class="quiz-feedback is-hint">Aucune reponse donnee.</p>
+        <p class="quiz-feedback is-hint">Aucune réponse donnée.</p>
       {% endif %}
       <p class="quiz-explanation">{{ item.explanation }}</p>
     </fieldset>

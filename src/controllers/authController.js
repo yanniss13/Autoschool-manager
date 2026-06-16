@@ -110,7 +110,7 @@ async function login(req, res, next) {
 // GET /employee-login
 function showEmployeeLogin(req, res) {
   res.render('auth/employee-login', {
-    title: 'Connexion employe',
+    title: 'Connexion employé',
     errors: {},
     values: {},
   });
@@ -119,7 +119,7 @@ function showEmployeeLogin(req, res) {
 // GET /student-login
 function showStudentLogin(req, res) {
   res.render('auth/student-login', {
-    title: 'Connexion eleve',
+    title: 'Connexion élève',
     errors: {},
     values: {},
   });
@@ -132,7 +132,7 @@ async function employeeLogin(req, res, next) {
 
     if (!isValid) {
       return res.status(400).render('auth/employee-login', {
-        title: 'Connexion employe',
+        title: 'Connexion employé',
         errors,
         values: { email: req.body.email },
       });
@@ -144,7 +144,7 @@ async function employeeLogin(req, res, next) {
 
     if (!employee || !passwordOk) {
       return res.status(401).render('auth/employee-login', {
-        title: 'Connexion employe',
+        title: 'Connexion employé',
         errors: { global: 'Identifiants invalides' },
         values: { email: req.body.email },
       });
@@ -156,7 +156,7 @@ async function employeeLogin(req, res, next) {
       req.session.employeeId = employee.id;
       req.session.companyId = null;
       req.session.studentId = null;
-      req.flash('success', 'Connexion employe reussie.');
+      req.flash('success', 'Connexion employé réussie.');
       res.redirect('/employee-space');
     });
   } catch (err) {
@@ -171,7 +171,7 @@ async function studentLogin(req, res, next) {
 
     if (!isValid) {
       return res.status(400).render('auth/student-login', {
-        title: 'Connexion eleve',
+        title: 'Connexion élève',
         errors,
         values: { email: req.body.email },
       });
@@ -183,7 +183,7 @@ async function studentLogin(req, res, next) {
 
     if (!student || !passwordOk) {
       return res.status(401).render('auth/student-login', {
-        title: 'Connexion eleve',
+        title: 'Connexion élève',
         errors: { global: 'Identifiants invalides' },
         values: { email: req.body.email },
       });
@@ -195,7 +195,7 @@ async function studentLogin(req, res, next) {
       req.session.studentId = student.id;
       req.session.employeeId = null;
       req.session.companyId = null;
-      req.flash('success', 'Connexion eleve reussie.');
+      req.flash('success', 'Connexion élève réussie.');
       res.redirect('/student-space');
     });
   } catch (err) {

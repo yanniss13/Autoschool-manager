@@ -27,23 +27,23 @@ function validateScheduleSlot(body) {
   const endsAt = parseDateTime(body.endsAt);
   const noteRaw = (body.note || '').trim();
 
-  if (!employeeId) errors.employeeId = "L'employe est obligatoire.";
-  if (!studentId) errors.studentId = "L'eleve est obligatoire.";
+  if (!employeeId) errors.employeeId = "L'employé est obligatoire.";
+  if (!studentId) errors.studentId = "L'élève est obligatoire.";
 
   if (!title) {
     errors.title = 'Le titre est obligatoire.';
   } else if (title.length > TITLE_MAX) {
-    errors.title = `Le titre ne doit pas depasser ${TITLE_MAX} caracteres.`;
+    errors.title = `Le titre ne doit pas dépasser ${TITLE_MAX} caractères.`;
   }
 
-  if (!startsAt) errors.startsAt = 'La date de debut est obligatoire.';
+  if (!startsAt) errors.startsAt = 'La date de début est obligatoire.';
   if (!endsAt) errors.endsAt = 'La date de fin est obligatoire.';
   if (startsAt && endsAt && endsAt <= startsAt) {
-    errors.endsAt = 'La date de fin doit etre apres la date de debut.';
+    errors.endsAt = 'La date de fin doit être après la date de début.';
   }
 
   if (noteRaw.length > NOTE_MAX) {
-    errors.note = `La note ne doit pas depasser ${NOTE_MAX} caracteres.`;
+    errors.note = `La note ne doit pas dépasser ${NOTE_MAX} caractères.`;
   }
 
   return {

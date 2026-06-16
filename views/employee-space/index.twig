@@ -14,12 +14,12 @@
     </article>
 
     <article class="summary-card">
-      <h2>Vehicule affecte</h2>
+      <h2>Véhicule affecté</h2>
       {% if employee.vehicle %}
         <p><strong>{{ employee.vehicle.registrationNumber }}</strong></p>
         <p class="muted">{{ employee.vehicle.brand }} {{ employee.vehicle.model }}</p>
       {% else %}
-        <p class="muted">Aucun vehicule affecte pour le moment.</p>
+        <p class="muted">Aucun véhicule affecté pour le moment.</p>
       {% endif %}
     </article>
   </section>
