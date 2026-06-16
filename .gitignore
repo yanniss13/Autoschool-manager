@@ -18,3 +18,15 @@ prisma/dev.db-shm
 
 # Sorties d'extensions VS Code
 .VSCodeCounter/
+.vscode/
+
+# Outillage / etat local des assistants IA
+.superpowers/
+docs/superpowers/
+
+# Docs de collaboration IA et de soutenance (non necessaires au code)
+AGENTS.md
+CLAUDE.md
+CONTEXTE.md
+GUIDE-DU-CODE.md
+QUESTIONS-REPONSES-SOUTENANCE.md
