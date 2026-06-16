@@ -1,17 +1,25 @@
 // Controleur de l'espace eleve : planning, entrainement et assistant code.
 const scheduleService = require('../services/scheduleService');
+const studentService = require('../services/studentService');
 const trainingService = require('../services/roadCodeTrainingService');
 const assistantService = require('../services/roadCodeAssistantService');
+const passwordUtil = require('../utils/password');
+const { validatePasswordChange } = require('../validators/passwordResetValidator');
 const {
   themes,
   findTheme,
   questionsForTheme,
   questionsByIds,
-  randomQuestions,
+  weightedRandomQuestions,
 } = require('../data/roadCodeQuestions');
 
-// Parametres de l'examen blanc (calque l'ETG officiel).
-const EXAM = { count: 40, durationMin: 30, pass: 35 };
+// Parametres de l'examen blanc (calque l'ETG officiel : ~87,5 % de reussite).
+const EXAM = { count: 40, durationMin: 30, passRatio: 0.875 };
+
+// Seuil de reussite derive du nombre reel de questions (jamais > total).
+function examPassThreshold(total) {
+  return Math.ceil(total * EXAM.passRatio);
+}
 const { toDateTimeLocal } = require('../utils/dateFormat');
 const { parseDateRange } = require('../utils/http');
 
@@ -93,7 +101,7 @@ async function index(req, res, next) {
   try {
     const progress = await trainingService.progressForStudent(req.student.id);
     res.render('student-space/index', {
-      title: 'Mon espace eleve',
+      title: 'Mon espace élève',
       student: req.student,
       progress,
     });
@@ -109,7 +117,7 @@ async function trainingPage(req, res, next) {
     const progress = await trainingService.progressForStudent(req.student.id);
     const missedQuestions = await trainingService.recentMissedQuestions(req.student.id);
     res.render('student-space/training', {
-      title: 'Entrainement code',
+      title: 'Entraînement code',
       student: req.student,
       themes,
       selectedTheme,
@@ -126,7 +134,7 @@ async function trainingPage(req, res, next) {
 // GET /student-space/exam — Examen blanc : tirage aleatoire, reponses cachees, minuteur.
 async function examPage(req, res, next) {
   try {
-    const questions = randomQuestions(EXAM.count);
+    const questions = weightedRandomQuestions(EXAM.count);
     res.render('student-space/exam', {
       title: 'Examen blanc',
       student: req.student,
@@ -134,7 +142,7 @@ async function examPage(req, res, next) {
       questionIdsCsv: questions.map((q) => q.id).join(','),
       exam: {
         count: questions.length,
-        pass: EXAM.pass,
+        pass: examPassThreshold(questions.length),
         durationMin: EXAM.durationMin,
         durationSec: EXAM.durationMin * 60,
       },
@@ -161,12 +169,13 @@ async function exam(req, res, next) {
       ok: result.answers[q.id] === q.correctChoice,
     }));
 
+    const pass = examPassThreshold(result.total);
     res.render('student-space/exam-result', {
-      title: 'Resultat de l examen',
+      title: "Résultat de l'examen",
       student: req.student,
       result,
-      passed: result.score >= EXAM.pass,
-      pass: EXAM.pass,
+      passed: result.score >= pass,
+      pass,
       rate: result.total > 0 ? Math.round((result.score / result.total) * 100) : 0,
       review,
     });
@@ -215,7 +224,7 @@ async function training(req, res, next) {
     const result = trainingService.scoreTheme(selectedTheme.id, req.body);
     await trainingService.createSession(req.student, result);
 
-    req.flash('success', `Session enregistree : ${result.score}/${result.total}.`);
+    req.flash('success', `Session enregistrée : ${result.score}/${result.total}.`);
     res.redirect('/student-space/training');
   } catch (err) {
     next(err);
@@ -277,6 +286,44 @@ async function clearAssistant(req, res, next) {
   }
 }
 
+// GET /student-space/password — changement de mot de passe (force a la 1re connexion,
+// ou volontaire). `forced` => message d'invite + acces verrouille par le middleware.
+function passwordPage(req, res) {
+  res.render('student-space/password', {
+    title: 'Mot de passe',
+    errors: {},
+    forced: req.student.mustChangePassword,
+  });
+}
+
+// POST /student-space/password
+async function changePassword(req, res, next) {
+  try {
+    const { isValid, errors, value } = validatePasswordChange(req.body);
+
+    // Refuse un mot de passe identique a l'actuel (sinon le changement est sans effet).
+    if (isValid && req.student.passwordHash) {
+      const same = await passwordUtil.compare(value.password, req.student.passwordHash);
+      if (same) errors.password = "Choisissez un mot de passe different de l'actuel.";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      return res.status(400).render('student-space/password', {
+        title: 'Mot de passe',
+        errors,
+        forced: req.student.mustChangePassword,
+      });
+    }
+
+    const passwordHash = await passwordUtil.hash(value.password);
+    await studentService.updatePasswordById(req.student.id, passwordHash, false);
+    req.flash('success', 'Mot de passe mis à jour.');
+    res.redirect('/student-space');
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   index,
   trainingPage,
@@ -288,4 +335,6 @@ module.exports = {
   trainingQuestions,
   assistant,
   clearAssistant,
+  passwordPage,
+  changePassword,
 };

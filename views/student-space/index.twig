@@ -3,9 +3,9 @@
 {% block content %}
   <section class="page-header student-portal-header">
     <div>
-      <p class="eyebrow">Espace eleve</p>
+      <p class="eyebrow">Espace élève</p>
       <h1>Bonjour {{ student.firstName }}</h1>
-      <p class="muted">{{ student.company.businessName }} - Code de la route et lecons de conduite</p>
+      <p class="muted">{{ student.company.businessName }} - Code de la route et leçons de conduite</p>
     </div>
   </section>
 
@@ -14,18 +14,19 @@
       <h2>Profil</h2>
       <p><strong>{{ student.firstName }} {{ student.lastName }}</strong></p>
       <p class="muted">{{ student.email }}</p>
+      <p><a href="/student-space/password">Changer mon mot de passe</a></p>
     </article>
 
     <article class="summary-card learning-score-card">
       <h2>Progression code</h2>
       <p class="stat-value">{{ progress.successRate }}%</p>
-      <p class="muted">{{ progress.totalScore }}/{{ progress.totalQuestions }} bonnes reponses</p>
-      <p class="muted">{{ progress.sessionCount }} session(s) &middot; serie de {{ progress.streak }} jour(s)</p>
-      <p><a href="/student-space/training" class="btn btn-primary">S'entrainer au code</a></p>
+      <p class="muted">{{ progress.totalScore }}/{{ progress.totalQuestions }} bonnes réponses</p>
+      <p class="muted">{{ progress.sessionCount }} session(s) &middot; série de {{ progress.streak }} jour(s)</p>
+      <p><a href="/student-space/training" class="btn btn-primary">S'entraîner au code</a></p>
     </article>
 
     <article class="summary-card">
-      <h2>Dernieres sessions</h2>
+      <h2>Dernières sessions</h2>
       {% if progress.recent|length > 0 %}
         <ul class="compact-list">
           {% for session in progress.recent %}

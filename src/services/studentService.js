@@ -52,6 +52,49 @@ function countByCompany(companyId) {
   return prisma.student.count({ where: { companyId } });
 }
 
+// --- Reinitialisation de mot de passe ---
+
+// Enregistre le hash d'un jeton de reset et son expiration pour un eleve.
+function setResetToken(id, resetTokenHash, resetTokenExpiresAt) {
+  return prisma.student.update({
+    where: { id },
+    data: { resetTokenHash, resetTokenExpiresAt },
+  });
+}
+
+// Recherche un eleve par hash de jeton, uniquement si le jeton n'est pas expire.
+function findByResetTokenHash(resetTokenHash) {
+  return prisma.student.findFirst({
+    where: {
+      resetTokenHash,
+      resetTokenExpiresAt: { gt: new Date() },
+    },
+  });
+}
+
+// Applique un nouveau mot de passe et invalide le jeton (usage unique).
+// L'eleve a choisi lui-meme son mot de passe -> plus de changement force.
+function applyPasswordReset(id, passwordHash) {
+  return prisma.student.update({
+    where: { id },
+    data: {
+      passwordHash,
+      resetTokenHash: null,
+      resetTokenExpiresAt: null,
+      mustChangePassword: false,
+    },
+  });
+}
+
+// Met a jour le mot de passe d'un eleve par son id (changement en self-service depuis
+// l'espace eleve : pas de companyId en session cote eleve).
+function updatePasswordById(id, passwordHash, mustChangePassword = false) {
+  return prisma.student.update({
+    where: { id },
+    data: { passwordHash, mustChangePassword },
+  });
+}
+
 module.exports = {
   findAllByCompany,
   findOwnedById,
@@ -61,4 +104,8 @@ module.exports = {
   updateOwned,
   deleteOwned,
   countByCompany,
+  setResetToken,
+  findByResetTokenHash,
+  applyPasswordReset,
+  updatePasswordById,
 };

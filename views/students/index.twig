@@ -26,6 +26,13 @@
             <td>{{ s.phone|default('—') }}</td>
             <td class="actions">
               <a href="/students/{{ s.id }}/edit" class="btn btn-small">Modifier</a>
+              {% if s.email %}
+                <form action="/students/{{ s.id }}/resend-credentials" method="post" class="inline-form"
+                      data-confirm="Renvoyer les identifiants ? Un nouveau mot de passe sera généré et envoyé par email à l'élève.">
+                  <input type="hidden" name="_csrf" value="{{ csrfToken }}">
+                  <button type="submit" class="btn btn-small">Renvoyer les identifiants</button>
+                </form>
+              {% endif %}
               <form action="/students/{{ s.id }}/delete" method="post" class="inline-form"
                     data-confirm="Supprimer cet élève ? Ses créneaux seront aussi supprimés.">
                 <input type="hidden" name="_csrf" value="{{ csrfToken }}">

@@ -17,6 +17,7 @@
 require('dotenv').config({ quiet: true });
 
 const { spawn } = require('child_process');
+const crypto = require('crypto');
 const path = require('path');
 const dateFormat = require('../src/utils/dateFormat');
 const { parseId } = require('../src/utils/http');
@@ -87,11 +88,14 @@ function makeClient() {
     if (method !== 'GET' && method !== 'HEAD') {
       if (!csrfToken) {
         // Recupere le jeton depuis le meta d'une page rendue. Une fois connecte,
-        // '/' redirige vers /dashboard : on suit alors la redirection pour tomber
-        // sur une page 200 qui porte la balise meta csrf-token.
+        // '/' redirige vers l'espace (ex. /dashboard, ou /student-space puis
+        // /student-space/password a la 1re connexion) : on suit les redirections
+        // (plusieurs sauts possibles) jusqu'a une page 200 qui porte la balise meta.
         let page = await raw('/'); // etablit la session + recupere le jeton
-        if (page.status >= 300 && page.status < 400 && page.location) {
+        let hops = 0;
+        while (page.status >= 300 && page.status < 400 && page.location && hops < 5) {
           page = await raw(page.location);
+          hops += 1;
         }
         const m = page.text.match(/name="csrf-token" content="([^"]+)"/);
         csrfToken = m ? m[1] : '';
@@ -134,7 +138,9 @@ async function addEmployee(client, email) {
 function startServer() {
   return spawn(process.execPath, ['src/server.js'], {
     cwd: ROOT,
-    env: { ...process.env, PORT: String(PORT) },
+    // NODE_ENV=test : court-circuite l'envoi SMTP reel (le mailer ne fait aucun
+    // appel reseau et renvoie false) pour que le test reste hors-ligne et rapide.
+    env: { ...process.env, PORT: String(PORT), NODE_ENV: 'test' },
     stdio: 'ignore',
   });
 }
@@ -248,6 +254,7 @@ async function runTests() {
   check('Creation eleve valide', r.status === 302 && r.location === '/students', `status=${r.status}`);
   const studentA = await prisma.student.findFirst({ where: { companyId: companyA.id } });
   check('Eleve persiste en base', !!studentA, 'eleve introuvable');
+  check('Nouvel eleve : changement de mot de passe requis a la 1re connexion', studentA.mustChangePassword === true, `val=${studentA && studentA.mustChangePassword}`);
   r = await a('/students');
   check('Liste eleves affichee', r.status === 200 && r.text.includes('Dupont'), `status=${r.status}`);
   r = await a('/students', { method: 'POST', body: { firstName: '', lastName: 'SansPrenom' } });
@@ -286,7 +293,7 @@ async function runTests() {
       endsAt: '2030-01-03T10:00',
     },
   });
-  check('Creation creneau refusee sans eleve (400)', r.status === 400 && /eleve est obligatoire/i.test(r.text), `status=${r.status}`);
+  check('Creation creneau refusee sans eleve (400)', r.status === 400 && /élève est obligatoire/i.test(r.text), `status=${r.status}`);
   r = await a('/planning', {
     method: 'POST',
     body: {
@@ -346,6 +353,13 @@ async function runTests() {
   r = await studentClient('/student-login', { method: 'POST', body: { email: studentEmail, password: 'eleve1234' } });
   const studentLoggedIn = r.status === 302 && r.location === '/student-space';
   check('Connexion eleve par email + mot de passe', studentLoggedIn, `status=${r.status}`);
+  // 1re connexion : le mot de passe defini par le gerant doit etre change.
+  r = await studentClient('/student-space');
+  check('1re connexion eleve -> redirige vers changement de mot de passe', r.status === 302 && r.location === '/student-space/password', `status=${r.status} loc=${r.location}`);
+  r = await studentClient('/student-space/password', { method: 'POST', body: { password: 'eleveNouveau1', passwordConfirm: 'eleveNouveau1' } });
+  check('Changement de mot de passe force -> 302 /student-space', r.status === 302 && r.location === '/student-space', `status=${r.status}`);
+  const studentAfterChange = await prisma.student.findUnique({ where: { id: studentA.id } });
+  check('mustChangePassword repasse a false apres changement', studentAfterChange.mustChangePassword === false, `val=${studentAfterChange.mustChangePassword}`);
   r = await studentClient('/student-space');
   check(
     'Accueil eleve -> 200 avec profil + planning',
@@ -353,7 +367,7 @@ async function runTests() {
     `status=${r.status}`
   );
   r = await studentClient('/student-space/training');
-  check('Page entrainement -> 200 avec quiz', r.status === 200 && /Entrainement code/.test(r.text) && /training-quiz/.test(r.text), `status=${r.status}`);
+  check('Page entrainement -> 200 avec quiz', r.status === 200 && /Entraînement code/.test(r.text) && /training-quiz/.test(r.text), `status=${r.status}`);
   r = await studentClient('/student-space/assistant');
   check('Page assistant -> 200 avec chat', r.status === 200 && /Assistant code/.test(r.text) && /assistant-form/.test(r.text), `status=${r.status}`);
   r = await studentClient('/student-space/events?start=2029-12-01&end=2030-02-01');
@@ -391,13 +405,19 @@ async function runTests() {
   // Examen blanc : page + correction.
   r = await studentClient('/student-space/exam');
   check('Page examen blanc -> 200 avec formulaire', r.status === 200 && /Examen blanc/.test(r.text) && /id="exam-form"/.test(r.text), `status=${r.status}`);
+  // Tirage pondere par theme : 40 questions reparties sur les 5 themes.
+  const examIdsMatch = r.text.match(/name="questionIds" value="([^"]*)"/);
+  const examIds = examIdsMatch ? examIdsMatch[1].split(',').filter(Boolean) : [];
+  const examThemes = new Set(examIds.map((qid) => qid.replace(/-\d+$/, '')));
+  check('Examen : 40 questions tirees', examIds.length === 40, `n=${examIds.length}`);
+  check('Examen : tirage reparti sur les 5 themes', examThemes.size === 5, `themes=${[...examThemes].join(',')}`);
   r = await studentClient('/student-space/exam', {
     method: 'POST',
     body: { questionIds: 'priorites-1,vitesse-1', 'answer_priorites-1': 'b', 'answer_vitesse-1': 'a' },
   });
   check(
     'Examen blanc corrige (verdict + correction)',
-    r.status === 200 && /exam-verdict/.test(r.text) && /Correction detaillee/.test(r.text),
+    r.status === 200 && /exam-verdict/.test(r.text) && /Correction détaillée/.test(r.text),
     `status=${r.status}`
   );
 
@@ -438,6 +458,51 @@ async function runTests() {
   check('Entreprise B ne peut pas editer un eleve de A (404)', r.status === 404, `status=${r.status}`);
   r = await b(`/students/${studentA.id}/delete`, { method: 'POST' });
   check('Entreprise B ne peut pas supprimer un eleve de A (404)', r.status === 404, `status=${r.status}`);
+
+  section('RENVOI DES IDENTIFIANTS (ÉLÈVE)');
+  const beforeResend = await prisma.student.findUnique({ where: { id: studentA.id } });
+  r = await a(`/students/${studentA.id}/resend-credentials`, { method: 'POST' });
+  check('Renvoi des identifiants -> 302 /students', r.status === 302 && r.location === '/students', `status=${r.status}`);
+  const afterResend = await prisma.student.findUnique({ where: { id: studentA.id } });
+  check('Renvoi : nouveau mot de passe genere (hash change)', afterResend.passwordHash !== beforeResend.passwordHash, 'hash inchange');
+  check('Renvoi : changement de mot de passe a nouveau requis', afterResend.mustChangePassword === true, `val=${afterResend.mustChangePassword}`);
+
+  section('MOT DE PASSE OUBLIÉ (ÉLÈVE)');
+  const resetClient = makeClient();
+  r = await resetClient('/forgot-password', { method: 'POST', body: { email: studentEmail } });
+  check('Demande de reset (email connu) -> 200 + message generique', r.status === 200 && /lien de réinitialisation/i.test(r.text), `status=${r.status}`);
+  const studentWithToken = await prisma.student.findUnique({ where: { id: studentA.id } });
+  check('Jeton de reset (hash) stocke en base avec expiration', !!studentWithToken.resetTokenHash && studentWithToken.resetTokenExpiresAt > new Date(), 'jeton absent');
+  r = await resetClient('/forgot-password', { method: 'POST', body: { email: `inconnu-${stamp}@test.fr` } });
+  check('Demande de reset (email inconnu) -> meme message (anti-enumeration)', r.status === 200 && /lien de réinitialisation/i.test(r.text), `status=${r.status}`);
+  r = await resetClient('/forgot-password', { method: 'POST', body: { email: 'pas-un-email' } });
+  check('Demande de reset refusee si email invalide (400)', r.status === 400 && /valide/i.test(r.text), `status=${r.status}`);
+
+  // On injecte un jeton connu en base (le jeton brut ne transite que par email,
+  // non envoye en test) pour pouvoir exercer le point d'entree de reinitialisation.
+  const resetToken = crypto.randomBytes(16).toString('hex');
+  const resetHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+  await prisma.student.update({
+    where: { id: studentA.id },
+    data: { resetTokenHash: resetHash, resetTokenExpiresAt: new Date(Date.now() + 3600000) },
+  });
+  r = await resetClient(`/reset-password?token=${resetToken}`);
+  check('Page reset avec jeton valide -> 200 + formulaire', r.status === 200 && /Nouveau mot de passe/.test(r.text) && r.text.includes(resetToken), `status=${r.status}`);
+  r = await resetClient('/reset-password?token=jeton-invalide');
+  check('Page reset avec jeton invalide -> 400', r.status === 400 && /invalide ou a expir/i.test(r.text), `status=${r.status}`);
+  r = await resetClient('/reset-password', { method: 'POST', body: { token: resetToken, password: 'court', passwordConfirm: 'court' } });
+  check('Reset refuse si mot de passe trop court (400)', r.status === 400 && /au moins/i.test(r.text), `status=${r.status}`);
+  r = await resetClient('/reset-password', { method: 'POST', body: { token: resetToken, password: 'nouveauMDP1', passwordConfirm: 'different' } });
+  check('Reset refuse si confirmation differente (400)', r.status === 400 && /correspondent pas/i.test(r.text), `status=${r.status}`);
+  r = await resetClient('/reset-password', { method: 'POST', body: { token: resetToken, password: 'nouveauMDP1', passwordConfirm: 'nouveauMDP1' } });
+  check('Reset valide -> 302 /student-login', r.status === 302 && r.location === '/student-login', `status=${r.status}`);
+  const studentReset = await prisma.student.findUnique({ where: { id: studentA.id } });
+  check('Jeton consomme apres reset (usage unique)', studentReset.resetTokenHash === null && studentReset.passwordHash !== studentWithToken.passwordHash, 'jeton non consomme');
+  const reloginClient = makeClient();
+  r = await reloginClient('/student-login', { method: 'POST', body: { email: studentEmail, password: 'nouveauMDP1' } });
+  check('Connexion eleve avec le nouveau mot de passe', r.status === 302 && r.location === '/student-space', `status=${r.status}`);
+  r = await resetClient('/reset-password', { method: 'POST', body: { token: resetToken, password: 'encoreUnAutre1', passwordConfirm: 'encoreUnAutre1' } });
+  check('Jeton non rejouable apres usage (400)', r.status === 400 && /invalide ou a expir/i.test(r.text), `status=${r.status}`);
 
   section('SUPPRESSIONS');
   await a(`/vehicles/${v1.id}/assign`, { method: 'POST', body: { employeeId: String(e1.id) } });

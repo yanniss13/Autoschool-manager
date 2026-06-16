@@ -2,6 +2,7 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const authController = require('../controllers/authController');
+const passwordResetController = require('../controllers/passwordResetController');
 const redirectIfAuth = require('../middlewares/redirectIfAuth');
 
 const router = express.Router();
@@ -52,8 +53,8 @@ const employeeLoginLimiter = rateLimit({
   legacyHeaders: false,
   handler: (req, res) => {
     res.status(429).render('auth/employee-login', {
-      title: 'Connexion employe',
-      errors: { global: 'Trop de tentatives de connexion echouees. Reessayez dans 15 minutes.' },
+      title: 'Connexion employé',
+      errors: { global: 'Trop de tentatives de connexion échouées. Réessayez dans 15 minutes.' },
       values: { email: req.body.email },
     });
   },
@@ -67,8 +68,8 @@ const studentLoginLimiter = rateLimit({
   legacyHeaders: false,
   handler: (req, res) => {
     res.status(429).render('auth/student-login', {
-      title: 'Connexion eleve',
-      errors: { global: 'Trop de tentatives de connexion echouees. Reessayez dans 15 minutes.' },
+      title: 'Connexion élève',
+      errors: { global: 'Trop de tentatives de connexion échouées. Réessayez dans 15 minutes.' },
       values: { email: req.body.email },
     });
   },
@@ -85,6 +86,45 @@ router.post('/employee-login', employeeLoginLimiter, redirectIfAuth, authControl
 
 router.get('/student-login', redirectIfAuth, authController.showStudentLogin);
 router.post('/student-login', studentLoginLimiter, redirectIfAuth, authController.studentLogin);
+
+// Anti-abus : la demande de reset peut declencher un envoi d'email (cout + risque
+// d'inondation d'une boite). On limite par IP. Le POST de reset (choix du nouveau
+// mot de passe) est aussi limite pour gener le brute-force de jeton.
+const forgotPasswordLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 heure
+  limit: 10, // 10 demandes max par IP sur la fenetre
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    res.status(429).render('auth/forgot-password', {
+      title: 'Mot de passe oublie',
+      errors: { global: 'Trop de demandes. Réessayez plus tard.' },
+      values: { email: req.body.email },
+      notice: null,
+    });
+  },
+});
+
+const resetPasswordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    res.status(429).render('auth/reset-password', {
+      title: 'Nouveau mot de passe',
+      errors: { global: 'Trop de tentatives. Réessayez plus tard.' },
+      token: (req.body.token || '').trim(),
+      expired: false,
+    });
+  },
+});
+
+router.get('/forgot-password', redirectIfAuth, passwordResetController.showForgot);
+router.post('/forgot-password', forgotPasswordLimiter, redirectIfAuth, passwordResetController.forgot);
+
+router.get('/reset-password', redirectIfAuth, passwordResetController.showReset);
+router.post('/reset-password', resetPasswordLimiter, redirectIfAuth, passwordResetController.reset);
 
 router.post('/logout', authController.logout);
 router.post('/employee-logout', authController.employeeLogout);

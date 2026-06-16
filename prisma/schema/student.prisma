@@ -6,6 +6,15 @@ model Student {
   phone        String?
   passwordHash String?
 
+  // Mot de passe defini par le gerant (ou renvoye) -> l'eleve doit le changer a sa
+  // 1re connexion. Repasse a false quand l'eleve choisit lui-meme son mot de passe.
+  mustChangePassword Boolean @default(false)
+
+  // Reinitialisation de mot de passe : on stocke un HASH du jeton (jamais le
+  // jeton en clair) + son expiration. Le jeton brut n'existe que dans l'email.
+  resetTokenHash      String?
+  resetTokenExpiresAt DateTime?
+
   companyId Int
   company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
