@@ -7,7 +7,7 @@ module.exports = async function loadEmployee(req, res, next) {
     const employee = await employeeService.findByIdWithAccess(req.session.employeeId);
 
     if (!employee) {
-      return req.session.destroy(() => res.redirect('/employee-login'));
+      return req.session.destroy(() => res.redirect('/espace-login'));
     }
 
     req.employee = employee;

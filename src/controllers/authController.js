@@ -3,8 +3,7 @@ const companyService = require('../services/companyService');
 const employeeService = require('../services/employeeService');
 const studentService = require('../services/studentService');
 const { validateRegister, validateLogin } = require('../validators/companyValidator');
-const { validateEmployeeLogin } = require('../validators/employeeAuthValidator');
-const { validateStudentLogin } = require('../validators/studentAuthValidator');
+const { validateEmailLogin } = require('../validators/emailLoginValidator');
 const password = require('../utils/password');
 
 // GET /register
@@ -107,96 +106,62 @@ async function login(req, res, next) {
   }
 }
 
-// GET /employee-login
-function showEmployeeLogin(req, res) {
-  res.render('auth/employee-login', {
-    title: 'Connexion employé',
+// GET /espace-login — page de connexion unifiée employé / élève.
+function showEspaceLogin(req, res) {
+  res.render('auth/espace-login', {
+    title: 'Connexion',
     errors: {},
     values: {},
   });
 }
 
-// GET /student-login
-function showStudentLogin(req, res) {
-  res.render('auth/student-login', {
-    title: 'Connexion élève',
-    errors: {},
-    values: {},
-  });
-}
-
-// POST /employee-login
-async function employeeLogin(req, res, next) {
+// POST /espace-login — connexion par email + mot de passe, rôle auto-détecté :
+// on cherche l'email côté employé d'abord, puis côté élève (ordre déterministe).
+async function espaceLogin(req, res, next) {
   try {
-    const { isValid, errors, value } = validateEmployeeLogin(req.body);
+    const { isValid, errors, value } = validateEmailLogin(req.body);
 
     if (!isValid) {
-      return res.status(400).render('auth/employee-login', {
-        title: 'Connexion employé',
+      return res.status(400).render('auth/espace-login', {
+        title: 'Connexion',
         errors,
         values: { email: req.body.email },
       });
     }
 
+    // Employé d'abord.
     const employee = await employeeService.findByEmail(value.email);
-    const passwordOk =
-      employee && (await password.compare(value.password, employee.passwordHash));
-
-    if (!employee || !passwordOk) {
-      return res.status(401).render('auth/employee-login', {
-        title: 'Connexion employé',
-        errors: { global: 'Identifiants invalides' },
-        values: { email: req.body.email },
+    if (employee && (await password.compare(value.password, employee.passwordHash))) {
+      return req.session.regenerate((err) => {
+        if (err) return next(err);
+        req.session.authRole = 'employee';
+        req.session.employeeId = employee.id;
+        req.session.companyId = null;
+        req.session.studentId = null;
+        req.flash('success', 'Connexion employé réussie.');
+        res.redirect('/employee-space');
       });
     }
 
-    req.session.regenerate((err) => {
-      if (err) return next(err);
-      req.session.authRole = 'employee';
-      req.session.employeeId = employee.id;
-      req.session.companyId = null;
-      req.session.studentId = null;
-      req.flash('success', 'Connexion employé réussie.');
-      res.redirect('/employee-space');
-    });
-  } catch (err) {
-    next(err);
-  }
-}
-
-// POST /student-login
-async function studentLogin(req, res, next) {
-  try {
-    const { isValid, errors, value } = validateStudentLogin(req.body);
-
-    if (!isValid) {
-      return res.status(400).render('auth/student-login', {
-        title: 'Connexion élève',
-        errors,
-        values: { email: req.body.email },
-      });
-    }
-
+    // Sinon élève.
     const student = await studentService.findByEmail(value.email);
-    const passwordOk =
-      student && student.passwordHash && (await password.compare(value.password, student.passwordHash));
-
-    if (!student || !passwordOk) {
-      return res.status(401).render('auth/student-login', {
-        title: 'Connexion élève',
-        errors: { global: 'Identifiants invalides' },
-        values: { email: req.body.email },
+    if (student && student.passwordHash && (await password.compare(value.password, student.passwordHash))) {
+      return req.session.regenerate((err) => {
+        if (err) return next(err);
+        req.session.authRole = 'student';
+        req.session.studentId = student.id;
+        req.session.employeeId = null;
+        req.session.companyId = null;
+        req.flash('success', 'Connexion élève réussie.');
+        res.redirect('/student-space');
       });
     }
 
-    req.session.regenerate((err) => {
-      if (err) return next(err);
-      req.session.authRole = 'student';
-      req.session.studentId = student.id;
-      req.session.employeeId = null;
-      req.session.companyId = null;
-      req.flash('success', 'Connexion élève réussie.');
-      res.redirect('/student-space');
+    // Message générique : ne distingue pas email inconnu / mauvais mot de passe / rôle.
+    return res.status(401).render('auth/espace-login', {
+      title: 'Connexion',
+      errors: { global: 'Identifiants invalides' },
+      values: { email: req.body.email },
     });
   } catch (err) {
     next(err);
@@ -213,14 +178,14 @@ function logout(req, res) {
 // POST /employee-logout
 function employeeLogout(req, res) {
   req.session.destroy(() => {
-    res.redirect('/employee-login');
+    res.redirect('/espace-login');
   });
 }
 
 // POST /student-logout
 function studentLogout(req, res) {
   req.session.destroy(() => {
-    res.redirect('/student-login');
+    res.redirect('/espace-login');
   });
 }
 
@@ -229,10 +194,8 @@ module.exports = {
   register,
   showLogin,
   login,
-  showEmployeeLogin,
-  employeeLogin,
-  showStudentLogin,
-  studentLogin,
+  showEspaceLogin,
+  espaceLogin,
   logout,
   employeeLogout,
   studentLogout,

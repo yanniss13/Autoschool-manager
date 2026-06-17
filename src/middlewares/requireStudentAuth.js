@@ -5,7 +5,7 @@ module.exports = function requireStudentAuth(req, res, next) {
 
   if (!isStudentSession) {
     req.flash('error', 'Veuillez vous connecter à votre espace élève.');
-    return res.redirect('/student-login');
+    return res.redirect('/espace-login');
   }
 
   next();

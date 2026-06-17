@@ -7,6 +7,11 @@ model Employee {
   age          Int?
   gender       String?
 
+  // Reinitialisation de mot de passe (meme principe que Student) : hash du jeton
+  // (jamais le jeton en clair) + expiration.
+  resetTokenHash      String?
+  resetTokenExpiresAt DateTime?
+
   companyId Int
   company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 

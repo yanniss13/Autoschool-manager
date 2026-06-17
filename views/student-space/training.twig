@@ -37,7 +37,7 @@
     </form>
   </article>
 
-  {% if progressCurve %}
+  {% if progressChart %}
     <section class="chart-card">
       <header class="chart-card__head">
         <div>
@@ -45,40 +45,25 @@
           <p class="muted">Taux de réussite, de la plus ancienne session à la plus récente.</p>
         </div>
         <div class="chart-card__stats">
-          <span class="chart-pill"><strong>{{ progressCurve.last.rate }}%</strong> dernière</span>
-          <span class="chart-pill chart-pill--soft"><strong>{{ progressCurve.average }}%</strong> moyenne</span>
+          <span class="chart-pill"><strong>{{ progressChart.last.rate }}%</strong> dernière</span>
+          <span class="chart-pill chart-pill--soft"><strong>{{ progressChart.average }}%</strong> moyenne</span>
         </div>
       </header>
 
-      <svg class="chart" viewBox="0 0 {{ progressCurve.width }} {{ progressCurve.height }}" role="img"
-           aria-label="Courbe d'évolution des taux de réussite par session">
-        <defs>
-          <linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1">
-            <stop class="chart__grad-top" offset="0%"></stop>
-            <stop class="chart__grad-bottom" offset="100%"></stop>
-          </linearGradient>
-        </defs>
+      <div class="progress-chart-shell">
+        <div class="progress-chart"
+             data-progress-chart
+             data-rates="{{ progressChart.rates|join(',') }}"
+             aria-label="Courbe d'évolution des taux de réussite par session"></div>
+      </div>
 
-        {# Grille horizontale + libelles de pourcentage #}
-        {% for line in progressCurve.grid %}
-          <line class="chart__grid" x1="{{ progressCurve.padLeft }}" y1="{{ line.y }}"
-                x2="{{ progressCurve.plotRight }}" y2="{{ line.y }}"></line>
-          <text class="chart__axis-label" x="{{ progressCurve.padLeft - 10 }}" y="{{ line.y + 4 }}"
-                text-anchor="end">{{ line.value }}%</text>
-        {% endfor %}
-
-        {# Aire degradee + courbe #}
-        <path class="chart__area" d="{{ progressCurve.area }}" fill="url(#chartFill)"></path>
-        <polyline class="chart__line" points="{{ progressCurve.polyline }}"></polyline>
-
-        {# Points (le dernier est mis en valeur) #}
-        {% for point in progressCurve.points %}
-          <circle class="chart__dot {% if loop.last %}chart__dot--last{% endif %}"
-                  cx="{{ point.x }}" cy="{{ point.y }}" r="{% if loop.last %}5{% else %}3.5{% endif %}">
-            <title>Session {{ point.index }} : {{ point.rate }}%</title>
-          </circle>
-        {% endfor %}
-      </svg>
+      <noscript>
+        <ol class="chart-fallback">
+          {% for point in progressChart.points %}
+            <li>Session {{ point.index }} : {{ point.rate }}%</li>
+          {% endfor %}
+        </ol>
+      </noscript>
     </section>
   {% endif %}
 
@@ -123,5 +108,7 @@
 {% endblock %}
 
 {% block scripts %}
+  <script src="/vendor/apexcharts/apexcharts.min.js" defer></script>
+  <script src="/js/student-progress-chart.js" defer></script>
   <script src="/js/training-quiz.js" defer></script>
 {% endblock %}

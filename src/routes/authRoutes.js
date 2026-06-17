@@ -45,30 +45,16 @@ const registerLimiter = rateLimit({
   },
 });
 
-const employeeLoginLimiter = rateLimit({
+// Connexion unifiée employé / élève (email + mot de passe).
+const espaceLoginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 20,
   skipSuccessfulRequests: true,
   standardHeaders: true,
   legacyHeaders: false,
   handler: (req, res) => {
-    res.status(429).render('auth/employee-login', {
-      title: 'Connexion employé',
-      errors: { global: 'Trop de tentatives de connexion échouées. Réessayez dans 15 minutes.' },
-      values: { email: req.body.email },
-    });
-  },
-});
-
-const studentLoginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: 20,
-  skipSuccessfulRequests: true,
-  standardHeaders: true,
-  legacyHeaders: false,
-  handler: (req, res) => {
-    res.status(429).render('auth/student-login', {
-      title: 'Connexion élève',
+    res.status(429).render('auth/espace-login', {
+      title: 'Connexion',
       errors: { global: 'Trop de tentatives de connexion échouées. Réessayez dans 15 minutes.' },
       values: { email: req.body.email },
     });
@@ -81,11 +67,14 @@ router.post('/register', registerLimiter, redirectIfAuth, authController.registe
 router.get('/login', redirectIfAuth, authController.showLogin);
 router.post('/login', loginLimiter, redirectIfAuth, authController.login);
 
-router.get('/employee-login', redirectIfAuth, authController.showEmployeeLogin);
-router.post('/employee-login', employeeLoginLimiter, redirectIfAuth, authController.employeeLogin);
+router.get('/espace-login', redirectIfAuth, authController.showEspaceLogin);
+router.post('/espace-login', espaceLoginLimiter, redirectIfAuth, authController.espaceLogin);
 
-router.get('/student-login', redirectIfAuth, authController.showStudentLogin);
-router.post('/student-login', studentLoginLimiter, redirectIfAuth, authController.studentLogin);
+// Anciennes URL conservées en redirection (liens/bookmarks existants).
+// 302 (et non 301) : un 301 serait mis en cache definitivement par le navigateur,
+// ce qui figerait ces chemins meme si on voulait les reutiliser plus tard.
+router.get('/employee-login', (req, res) => res.redirect(302, '/espace-login'));
+router.get('/student-login', (req, res) => res.redirect(302, '/espace-login'));
 
 // Anti-abus : la demande de reset peut declencher un envoi d'email (cout + risque
 // d'inondation d'une boite). On limite par IP. Le POST de reset (choix du nouveau

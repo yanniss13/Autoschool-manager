@@ -7,7 +7,7 @@ module.exports = async function loadStudent(req, res, next) {
     const student = await studentService.findByIdWithAccess(req.session.studentId);
 
     if (!student) {
-      return req.session.destroy(() => res.redirect('/student-login'));
+      return req.session.destroy(() => res.redirect('/espace-login'));
     }
 
     req.student = student;

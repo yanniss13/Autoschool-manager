@@ -1755,7 +1755,7 @@ small {
 }
 
 /* ===================================================================
-   GRAPHIQUE "EVOLUTION DES SCORES" (SVG inline, sans librairie)
+   GRAPHIQUE "EVOLUTION DES SCORES" (ApexCharts auto-heberge)
    =================================================================== */
 .chart-card {
   margin: var(--space-5) 0;
@@ -1804,49 +1804,74 @@ small {
   color: var(--primary);
 }
 
-.chart {
+.progress-chart-shell {
+  position: relative;
+  min-height: 320px;
+  padding: var(--space-3) var(--space-2) var(--space-1);
+  border: 1px solid color-mix(in srgb, var(--primary) 14%, var(--border));
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--primary) 7%, transparent), transparent 58%),
+    color-mix(in srgb, var(--surface) 94%, var(--primary));
+  overflow: hidden;
+}
+
+.progress-chart-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--primary) 10%, transparent) 1px, transparent 1px),
+    linear-gradient(180deg, color-mix(in srgb, var(--primary) 8%, transparent) 1px, transparent 1px);
+  background-size: 56px 56px;
+  opacity: 0.18;
+  mask-image: linear-gradient(180deg, black, transparent 74%);
+}
+
+.progress-chart {
+  position: relative;
+  z-index: 1;
   width: 100%;
-  height: auto;
-  display: block;
+  min-height: 300px;
+}
+
+.progress-chart .apexcharts-canvas,
+.progress-chart .apexcharts-svg {
   overflow: visible;
 }
 
-.chart__grid {
-  stroke: var(--border);
-  stroke-width: 1;
-  stroke-dasharray: 3 4;
+.progress-chart .apexcharts-tooltip {
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: var(--shadow-md) !important;
 }
 
-.chart__axis-label {
-  fill: var(--muted);
-  font-size: 11px;
+.progress-chart .apexcharts-tooltip-title {
+  border-bottom: 1px solid var(--border) !important;
+  font-weight: 700 !important;
+}
+
+.chart-fallback {
+  margin: var(--space-3) 0 0;
+  padding-left: var(--space-5);
+  color: var(--muted);
   font-weight: 600;
 }
 
-.chart__grad-top { stop-color: var(--primary); stop-opacity: 0.28; }
-.chart__grad-bottom { stop-color: var(--primary); stop-opacity: 0; }
+@media (max-width: 640px) {
+  .chart-card {
+    padding: var(--space-4);
+  }
 
-.chart__area {
-  stroke: none;
-}
+  .progress-chart-shell {
+    min-height: 280px;
+    padding-inline: 0;
+  }
 
-.chart__line {
-  fill: none;
-  stroke: var(--primary);
-  stroke-width: 2.5;
-  stroke-linejoin: round;
-  stroke-linecap: round;
-}
-
-.chart__dot {
-  fill: var(--surface);
-  stroke: var(--primary);
-  stroke-width: 2.5;
-}
-
-.chart__dot--last {
-  fill: var(--primary);
-  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--primary) 55%, transparent));
+  .progress-chart {
+    min-height: 270px;
+  }
 }
 
 /* ---- Jauges de progression par theme ---- */

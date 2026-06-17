@@ -31,60 +31,21 @@ function eventTitle(slot) {
 // Limite la taille du fil garde en session pour ne pas le faire grossir indefiniment.
 const MAX_THREAD_MESSAGES = 6;
 
-// Geometrie du graphe SVG de progression (espace utilisateur, marges pour les axes).
-const CHART = {
-  width: 640,
-  height: 260,
-  padTop: 22,
-  padRight: 18,
-  padBottom: 30,
-  padLeft: 42,
-  gridValues: [0, 25, 50, 75, 100], // lignes horizontales + libelles %
-};
-
-const round2 = (n) => Math.round(n * 100) / 100;
-
-// Transforme l'historique (taux par session) en geometrie prete a tracer :
-// aire degradee, courbe, points, grille horizontale et libelles d'axes.
-function buildCurve(history) {
+// Transforme l'historique en donnees simples pour ApexCharts.
+function buildProgressChart(history) {
   if (!history || history.length === 0) return null;
 
-  const { width, height, padTop, padRight, padBottom, padLeft, gridValues } = CHART;
-  const plotW = width - padLeft - padRight;
-  const plotH = height - padTop - padBottom;
-  const n = history.length;
-
-  const xAt = (i) => padLeft + (n > 1 ? (plotW * i) / (n - 1) : plotW / 2);
-  const yAt = (rate) => padTop + plotH * (1 - rate / 100);
-  const baseY = yAt(0);
-
   const points = history.map((entry, index) => ({
-    x: round2(xAt(index)),
-    y: round2(yAt(entry.rate)),
     rate: entry.rate,
     index: index + 1,
+    label: `Session ${index + 1}`,
   }));
 
-  const linePts = points.map((p) => `${p.x},${p.y}`).join(' ');
-
-  // Aire fermee sous la courbe (jusqu'a la ligne 0 %).
-  const first = points[0];
-  const last = points[points.length - 1];
-  const area = `M ${first.x},${round2(baseY)} L ${linePts.split(' ').join(' L ')} L ${last.x},${round2(baseY)} Z`;
-
-  const grid = gridValues.map((value) => ({ value, y: round2(yAt(value)) }));
-
   return {
-    width,
-    height,
-    padLeft: round2(padLeft),
-    plotRight: round2(width - padRight),
     points,
-    polyline: linePts,
-    area,
-    grid,
-    last,
-    average: Math.round(history.reduce((sum, e) => sum + e.rate, 0) / n),
+    rates: points.map((point) => point.rate),
+    last: points[points.length - 1],
+    average: Math.round(history.reduce((sum, entry) => sum + entry.rate, 0) / history.length),
   };
 }
 
@@ -123,7 +84,7 @@ async function trainingPage(req, res, next) {
       selectedTheme,
       questions: questionsForTheme(selectedTheme.id),
       progress,
-      progressCurve: buildCurve(progress.history),
+      progressChart: buildProgressChart(progress.history),
       missedQuestions,
     });
   } catch (err) {

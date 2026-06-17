@@ -57,6 +57,31 @@ function countByCompany(companyId) {
   return prisma.employee.count({ where: { companyId } });
 }
 
+// --- Reinitialisation de mot de passe (flux commun employe/eleve) ---
+
+// Enregistre le hash d'un jeton de reset et son expiration.
+function setResetToken(id, resetTokenHash, resetTokenExpiresAt) {
+  return prisma.employee.update({
+    where: { id },
+    data: { resetTokenHash, resetTokenExpiresAt },
+  });
+}
+
+// Recherche un employe par hash de jeton, uniquement si le jeton n'est pas expire.
+function findByResetTokenHash(resetTokenHash) {
+  return prisma.employee.findFirst({
+    where: { resetTokenHash, resetTokenExpiresAt: { gt: new Date() } },
+  });
+}
+
+// Applique un nouveau mot de passe et invalide le jeton (usage unique).
+function applyPasswordReset(id, passwordHash) {
+  return prisma.employee.update({
+    where: { id },
+    data: { passwordHash, resetTokenHash: null, resetTokenExpiresAt: null },
+  });
+}
+
 module.exports = {
   findAllByCompany,
   findOwnedById,
@@ -67,4 +92,7 @@ module.exports = {
   updateOwned,
   deleteOwned,
   countByCompany,
+  setResetToken,
+  findByResetTokenHash,
+  applyPasswordReset,
 };

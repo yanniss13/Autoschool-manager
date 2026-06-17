@@ -332,9 +332,9 @@ async function runTests() {
   check('Move refuse si start >= end (400)', r.status === 400, `status=${r.status}`);
 
   const employeeClient = makeClient();
-  r = await employeeClient('/employee-login', { method: 'POST', body: { email: emailA1, password: 'nouveau123' } });
+  r = await employeeClient('/espace-login', { method: 'POST', body: { email: emailA1, password: 'nouveau123' } });
   const employeeLoggedIn = r.status === 302 && r.location === '/employee-space';
-  check('Connexion employe par email + mot de passe', employeeLoggedIn, `status=${r.status}`);
+  check('Connexion employe (login unifie) -> /employee-space', employeeLoggedIn, `status=${r.status}`);
   // Espace employe (lecture seule) : page calendrier + vehicule affecte, puis events JSON.
   r = await employeeClient('/employee-space');
   check(
@@ -350,9 +350,9 @@ async function runTests() {
   check('Employe connecte refuse sur routes gerant', employeeLoggedIn && r.status === 302 && r.location === '/login', `status=${r.status}`);
 
   const studentClient = makeClient();
-  r = await studentClient('/student-login', { method: 'POST', body: { email: studentEmail, password: 'eleve1234' } });
+  r = await studentClient('/espace-login', { method: 'POST', body: { email: studentEmail, password: 'eleve1234' } });
   const studentLoggedIn = r.status === 302 && r.location === '/student-space';
-  check('Connexion eleve par email + mot de passe', studentLoggedIn, `status=${r.status}`);
+  check('Connexion eleve (login unifie) -> /student-space', studentLoggedIn, `status=${r.status}`);
   // 1re connexion : le mot de passe defini par le gerant doit etre change.
   r = await studentClient('/student-space');
   check('1re connexion eleve -> redirige vers changement de mot de passe', r.status === 302 && r.location === '/student-space/password', `status=${r.status} loc=${r.location}`);
@@ -399,7 +399,14 @@ async function runTests() {
   r = await studentClient('/student-space');
   check('Resume progression sur accueil (2 sessions)', r.status === 200 && /2 session\(s\)/.test(r.text), `status=${r.status}`);
   r = await studentClient('/student-space/training');
-  check('Courbe de progression sur page entrainement', r.status === 200 && /chart__line/.test(r.text), `status=${r.status}`);
+  check(
+    'Courbe de progression ApexCharts sur page entrainement',
+    r.status === 200 &&
+      /data-progress-chart/.test(r.text) &&
+      /student-progress-chart\.js/.test(r.text) &&
+      /apexcharts\.min\.js/.test(r.text),
+    `status=${r.status}`
+  );
   check('Questions a revoir affichees (ratees des sessions)', r.status === 200 && /review-card/.test(r.text), `status=${r.status}`);
 
   // Examen blanc : page + correction.
@@ -495,14 +502,39 @@ async function runTests() {
   r = await resetClient('/reset-password', { method: 'POST', body: { token: resetToken, password: 'nouveauMDP1', passwordConfirm: 'different' } });
   check('Reset refuse si confirmation differente (400)', r.status === 400 && /correspondent pas/i.test(r.text), `status=${r.status}`);
   r = await resetClient('/reset-password', { method: 'POST', body: { token: resetToken, password: 'nouveauMDP1', passwordConfirm: 'nouveauMDP1' } });
-  check('Reset valide -> 302 /student-login', r.status === 302 && r.location === '/student-login', `status=${r.status}`);
+  check('Reset valide -> 302 /espace-login', r.status === 302 && r.location === '/espace-login', `status=${r.status}`);
   const studentReset = await prisma.student.findUnique({ where: { id: studentA.id } });
   check('Jeton consomme apres reset (usage unique)', studentReset.resetTokenHash === null && studentReset.passwordHash !== studentWithToken.passwordHash, 'jeton non consomme');
   const reloginClient = makeClient();
-  r = await reloginClient('/student-login', { method: 'POST', body: { email: studentEmail, password: 'nouveauMDP1' } });
+  r = await reloginClient('/espace-login', { method: 'POST', body: { email: studentEmail, password: 'nouveauMDP1' } });
   check('Connexion eleve avec le nouveau mot de passe', r.status === 302 && r.location === '/student-space', `status=${r.status}`);
   r = await resetClient('/reset-password', { method: 'POST', body: { token: resetToken, password: 'encoreUnAutre1', passwordConfirm: 'encoreUnAutre1' } });
   check('Jeton non rejouable apres usage (400)', r.status === 400 && /invalide ou a expir/i.test(r.text), `status=${r.status}`);
+
+  // Le flux reset marche aussi pour un EMPLOYE (meme page, role auto-detecte par jeton).
+  const empResetClient = makeClient();
+  r = await empResetClient('/forgot-password', { method: 'POST', body: { email: emailA1 } });
+  check('Demande de reset (employe) -> 200 + message generique', r.status === 200 && /lien de réinitialisation/i.test(r.text), `status=${r.status}`);
+  const empWithToken = await prisma.employee.findUnique({ where: { id: e1.id } });
+  check('Jeton de reset stocke cote Employee', !!empWithToken.resetTokenHash && empWithToken.resetTokenExpiresAt > new Date(), 'jeton employe absent');
+  const empToken = crypto.randomBytes(16).toString('hex');
+  await prisma.employee.update({
+    where: { id: e1.id },
+    data: { resetTokenHash: crypto.createHash('sha256').update(empToken).digest('hex'), resetTokenExpiresAt: new Date(Date.now() + 3600000) },
+  });
+  r = await empResetClient('/reset-password', { method: 'POST', body: { token: empToken, password: 'EmployeNouveau1', passwordConfirm: 'EmployeNouveau1' } });
+  check('Reset employe valide -> 302 /espace-login', r.status === 302 && r.location === '/espace-login', `status=${r.status}`);
+  const empReset = await prisma.employee.findUnique({ where: { id: e1.id } });
+  check('Jeton employe consomme apres reset', empReset.resetTokenHash === null && empReset.passwordHash !== empWithToken.passwordHash, 'jeton employe non consomme');
+  const empReloginClient = makeClient();
+  r = await empReloginClient('/espace-login', { method: 'POST', body: { email: emailA1, password: 'EmployeNouveau1' } });
+  check('Connexion employe avec le nouveau mot de passe', r.status === 302 && r.location === '/employee-space', `status=${r.status}`);
+
+  // Les anciennes URL de connexion redirigent vers la page unifiee.
+  r = await makeClient()('/employee-login');
+  check('Ancienne URL /employee-login -> redirige vers /espace-login', r.status === 302 && r.location === '/espace-login', `status=${r.status} loc=${r.location}`);
+  r = await makeClient()('/student-login');
+  check('Ancienne URL /student-login -> redirige vers /espace-login', r.status === 302 && r.location === '/espace-login', `status=${r.status} loc=${r.location}`);
 
   section('SUPPRESSIONS');
   await a(`/vehicles/${v1.id}/assign`, { method: 'POST', body: { employeeId: String(e1.id) } });

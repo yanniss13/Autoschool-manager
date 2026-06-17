@@ -144,7 +144,7 @@ function layout({ heading, bodyHtml, footerText }) {
 
 // --- Email 1 : identifiants envoyes a la creation d'un eleve ---
 function sendStudentCredentials({ to, firstName, email, password, companyName }) {
-  const loginUrl = `${baseUrl()}/student-login`;
+  const loginUrl = `${baseUrl()}/espace-login`;
   const subject = 'Vos identifiants AutoSchool Manager';
   const text = [
     `Bonjour ${firstName},`,

@@ -14,7 +14,8 @@ soit pas déjà référent d'un autre véhicule.
 
 Les élèves disposent d'un accès dédié par **email + mot de passe** : ils voient
 leur planning automatiquement, peuvent lancer des sessions d'entraînement au code
-de la route et poser des questions à un assistant local.
+de la route, passer un examen blanc et poser des questions à un assistant Groq
+avec repli local.
 
 Chaque auto-école est **totalement cloisonnée** : un gérant ne voit jamais les
 données d'une autre entreprise.
@@ -35,6 +36,11 @@ données d'une autre entreprise.
 | Base de données | **SQLite** |
 | Hachage des mots de passe | **bcrypt** |
 | Style | **CSS custom** (sans framework) |
+| Sécurité HTTP | **helmet**, CSP stricte, CSRF maison |
+| Rate-limit | **express-rate-limit** |
+| Emails | **nodemailer** (SMTP optionnel, best-effort) |
+| Agenda | **FullCalendar** auto-hébergé |
+| Graphiques | **ApexCharts** auto-hébergé pour la progression élève |
 
 ## Fonctionnalités obligatoires réalisées
 
@@ -45,15 +51,19 @@ données d'une autre entreprise.
 - [x] CRUD complet des véhicules
 - [x] Affectation d'un véhicule à un employé **uniquement s'il n'est pas déjà référent d'un autre véhicule**
 - [x] Désaffectation d'un véhicule
-- [x] Planning simple : le gérant crée des créneaux pour ses employés
+- [x] Planning FullCalendar : le gérant crée, déplace et redimensionne des créneaux
 - [x] Connexion employé (email + mot de passe) et espace employé en lecture seule
 - [x] Affichage automatique du véhicule affecté dans l'espace employé
 - [x] Connexion élève (email + mot de passe) et espace élève en lecture seule
 - [x] Planning élève automatique à partir des créneaux saisis par le gérant
-- [x] Entraînement local au code de la route avec progression par thème
-- [x] Assistant local pour les questions de code de la route
+- [x] Entraînement local au code de la route avec progression par thème et graphique ApexCharts
+- [x] Examen blanc avec tirage pondéré par thème et correction détaillée
+- [x] Assistant code via Groq avec repli local hors-ligne
+- [x] Envoi optionnel des identifiants élève par email
+- [x] Changement forcé du mot de passe élève à la première connexion
+- [x] Réinitialisation de mot de passe élève par lien email à usage unique
 - [x] Compteurs du dashboard (employés, véhicules, véhicules affectés / disponibles)
-- [x] CSS propre et homogène sur toutes les pages
+- [x] CSS propre et homogène sur toutes les pages, avec thème clair/sombre
 
 ## Choix techniques importants
 
@@ -71,13 +81,15 @@ données d'une autre entreprise.
 - **Sécurité** : mots de passe hachés avec bcrypt, jamais stockés ni affichés en
   clair ; validation **systématiquement refaite côté serveur** ; pattern
   **Post/Redirect/Get** après chaque écriture.
-- **Planning simple** : les créneaux sont rattachés à un employé et à son
-  entreprise ; le véhicule affiché vient de l'affectation actuelle de l'employé.
+- **Planning FullCalendar** : les créneaux sont rattachés à un employé, à un
+  élève et à leur entreprise ; le gérant peut les créer, déplacer et redimensionner.
 - **Espace élève** : l'élève est authentifié par email + mot de passe, puis ne lit
   que ses propres créneaux. Les sessions de code de la route sont enregistrées
   avec `studentId` et `companyId`.
-- **Assistant code local** : première version sans API externe, basée sur des
-  réponses guidées par mots-clés et une banque de questions locale.
+- **Assistant code** : Groq est utilisé si `GROQ_API_KEY` est configurée ; sinon
+  le service bascule automatiquement sur un moteur local par mots-clés.
+- **Emails best-effort** : nodemailer envoie les identifiants et les liens de
+  reset si SMTP est configuré. Sans SMTP, les actions métier continuent.
 - **GET / POST uniquement** : les formulaires HTML natifs ne gèrent que ces deux
   verbes, cohérent avec un rendu serveur sans JavaScript.
 
@@ -95,8 +107,10 @@ Défense en profondeur adaptée à un rendu serveur :
   stocké) ; aucune vue n'utilise `|raw`.
 - **Cookie de session** `httpOnly`, `sameSite=lax`, et `secure` en production.
 - **Régénération de session à la connexion** (anti *session-fixation*).
-- **Limitation de débit** (rate-limiting) sur la connexion (anti brute-force) et
-  l'inscription (anti création massive de comptes).
+- **CSP stricte** : scripts limités à `'self'` + nonce, handlers inline retirés,
+  polices auto-hébergées dans `public/fonts/`.
+- **Limitation de débit** (rate-limiting) sur la connexion (anti brute-force),
+  l'inscription, l'assistant et le reset de mot de passe.
 - **Validation systématiquement refaite côté serveur** ; identifiants d'URL validés
   (toute ressource inexistante ou d'une autre entreprise → **404**, sans fuite).
 - **Fail-fast au démarrage** si `SESSION_SECRET` est absent (pas de repli silencieux
@@ -154,6 +168,12 @@ npm run prisma:migrate
 | `SESSION_SECRET` | Secret de signature des cookies de session (**obligatoire**) | une longue chaîne aléatoire |
 | `PORT` | Port d'écoute du serveur | `3000` |
 | `NODE_ENV` | `production` active les cookies `secure` (HTTPS) et `trust proxy` | `development` |
+| `GROQ_API_KEY` | Clé API optionnelle pour l'assistant code | vide en local |
+| `GROQ_MODEL` | Modèle Groq utilisé par l'assistant | `llama-3.3-70b-versatile` |
+| `SMTP_HOST` / `SMTP_PORT` | Serveur SMTP optionnel pour les emails | `sandbox.smtp.mailtrap.io` / `2525` |
+| `SMTP_USER` / `SMTP_PASS` | Identifiants SMTP optionnels | fournis par Mailtrap |
+| `MAIL_FROM` | Expéditeur affiché dans les emails | `AutoSchool Manager <no-reply@autoschool.local>` |
+| `APP_URL` | URL de base utilisée dans les liens email | `http://localhost:3000` |
 
 ## Lancer le projet
 
@@ -201,7 +221,7 @@ Il démarre un serveur dédié (port 3100, sans gêner `npm run dev`), effectue 
 vraies requêtes HTTP, vérifie certaines données en base via Prisma, puis
 **supprime ses propres données de test** (la base reste propre).
 
-Couverture (85 vérifications) :
+Couverture (125 vérifications) :
 - helpers date / durée et HTTP (`parseId` refuse les identifiants ambigus comme `1e3`) ;
 - authentification & session (inscription, connexion, protection, déconnexion) ;
 - CRUD employés (validation, unicité globale de l'email, hachage du mot de passe) ;
@@ -209,7 +229,11 @@ Couverture (85 vérifications) :
 - CRUD élèves avec email obligatoire et mot de passe haché ;
 - affectation / désaffectation et règle « un seul véhicule par employé » ;
 - planning saisi par le gérant, espace employé et espace élève en lecture seule ;
-- entraînement code de la route, progression élève et assistant local ;
+- entraînement code de la route, progression élève avec ApexCharts et assistant Groq/local ;
+- examen blanc avec tirage réparti sur les thèmes et correction détaillée ;
+- changement forcé du mot de passe élève à la première connexion ;
+- renvoi des identifiants avec mot de passe temporaire ;
+- reset de mot de passe élève avec jeton haché, expiration et usage unique ;
 - endpoints JSON FullCalendar (lecture, déplacement et rejet 400 des dates invalides) ;
 - cloisonnement multi-entreprises (accès cross-tenant → 404) ;
 - sécurité & validations (rejet d'un POST sans jeton CSRF, bornes d'âge et d'année) ;
@@ -235,17 +259,22 @@ Couverture (85 vérifications) :
    statut **Affecté** ; l'employé disparaît de la liste des employés affectables.
 6. **Règle métier** : tenter d'affecter le **même employé** à l'autre véhicule →
    refus avec message clair.
-7. **Planning** : aller dans **Planning**, créer un créneau simple pour un employé
-   (titre, début, fin, note optionnelle).
-8. **Espace employé** : se connecter sur `/employee-login` avec l'email et le mot
+7. **Élèves** : créer un élève avec email + mot de passe. Expliquer que les
+   identifiants peuvent être envoyés par email et que l'élève devra changer son
+   mot de passe à la première connexion.
+8. **Planning** : aller dans **Planning**, créer un créneau pour un employé et un
+   élève, puis le déplacer dans FullCalendar.
+9. **Espace employé** : se connecter sur `/employee-login` avec l'email et le mot
    de passe de l'employé → vérifier que le créneau et le véhicule affecté
    s'affichent automatiquement.
-9. **Espace élève** : créer un élève avec email + mot de passe, puis se connecter
-   sur `/student-login` → vérifier le planning, lancer un entraînement et poser
-   une question à l'assistant code.
-10. **Dashboard** : revenir au tableau de bord → les compteurs reflètent l'état
+10. **Espace élève** : se connecter sur `/student-login`, changer le mot de passe
+   forcé, vérifier le planning, lancer un entraînement, passer un examen blanc et
+   poser une question à l'assistant code.
+11. **Mot de passe oublié** : montrer le lien `/forgot-password` si le jury
+   demande le parcours de reset.
+12. **Dashboard** : revenir au tableau de bord → les compteurs reflètent l'état
    (employés, véhicules, véhicules affectés / disponibles).
-11. **Cloisonnement** (optionnel) : ouvrir une seconde session (autre auto-école)
+13. **Cloisonnement** (optionnel) : ouvrir une seconde session (autre auto-école)
    et montrer qu'elle ne voit aucune donnée de la première.
 
 ## Notes pour la présentation orale (jury)
@@ -270,9 +299,10 @@ Couverture (85 vérifications) :
 ## Limites actuelles du MVP
 
 - L'espace employé est volontairement en **lecture seule**.
-- Pas de réinitialisation de mot de passe ni de gestion fine des permissions.
+- Le reset de mot de passe est branché pour les élèves, pas encore pour gérants/employés.
+- Pas de gestion fine des permissions côté gérant.
 - Pas de lieux de départ/arrivée, examens officiels ou leçons détaillées.
-- Assistant code volontairement local : pas encore branché à une API IA externe.
+- L'assistant local reste simple ; Groq apporte les réponses riches quand la clé API est configurée.
 - Pas de détection automatique des chevauchements de créneaux.
 - Pas de recherche, de tri avancé ni de pagination sur les listes.
 - SQLite est adapté au développement / à la démonstration, pas à une forte charge
