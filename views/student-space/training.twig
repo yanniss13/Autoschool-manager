@@ -9,7 +9,7 @@
     </div>
   </section>
 
-  <article class="form-card">
+  <article class="form-card form-card--quiz">
     {# Selecteur de theme : en JS, recharge les questions en AJAX (cf. training-quiz.js).
        Sans JS, ce formulaire GET recharge la page sur le theme choisi (repli). #}
     <form action="/student-space/training" method="get" class="quiz-theme-form" id="quiz-theme-form">
@@ -77,6 +77,9 @@
       {% for question in missedQuestions %}
         <article class="review-card">
           <p class="review-card__q">{{ question.text }}</p>
+          {% if question.image %}
+            <img class="quiz-question__illustration quiz-question__illustration--review" src="{{ question.image }}" alt="Illustration : {{ question.text }}" loading="lazy" decoding="async">
+          {% endif %}
           {% for choice in question.choices %}
             {% if choice.id == question.correctChoice %}
               <p class="review-card__answer"><span class="review-card__check" aria-hidden="true"></span>{{ choice.text }}</p>

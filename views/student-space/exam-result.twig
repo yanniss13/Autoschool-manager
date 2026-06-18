@@ -30,6 +30,9 @@
         <span class="exam-review-item__num {% if item.ok %}is-ok{% else %}is-ko{% endif %}">{{ loop.index }}</span>
         {{ item.text }}
       </legend>
+      {% if item.image %}
+        <img class="quiz-question__illustration" src="{{ item.image }}" alt="Illustration : {{ item.text }}" loading="lazy" decoding="async">
+      {% endif %}
       {% for choice in item.choices %}
         <div class="choice-row{% if choice.id == item.correct %} is-correct{% elseif choice.id == item.given %} is-wrong{% endif %}">
           <span class="choice-row__marker" aria-hidden="true"></span>

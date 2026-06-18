@@ -13,6 +13,9 @@
 {% for question in questions %}
   <fieldset class="quiz-question" data-correct="{{ question.correctChoice }}" {% if not loop.first %}hidden{% endif %}>
     <legend>{{ question.text }}</legend>
+    {% if question.image %}
+      <img class="quiz-question__illustration" src="{{ question.image }}" alt="Illustration : {{ question.text }}" loading="lazy" decoding="async">
+    {% endif %}
     {% for choice in question.choices %}
       <label class="choice-row" data-choice="{{ choice.id }}">
         <input type="radio" name="answer_{{ question.id }}" value="{{ choice.id }}">

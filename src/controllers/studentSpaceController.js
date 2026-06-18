@@ -123,6 +123,7 @@ async function exam(req, res, next) {
 
     const review = questions.map((q) => ({
       text: q.text,
+      image: q.image,
       explanation: q.explanation,
       choices: q.choices,
       correct: q.correctChoice,

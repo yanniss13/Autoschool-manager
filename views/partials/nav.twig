@@ -1,6 +1,12 @@
 <header class="navbar">
   <a class="navbar-brand" href="/">AutoSchool Manager</a>
-  <nav class="navbar-links">
+  {# Bouton « berger » : affiche/masque par JS uniquement quand les liens ne tiennent plus
+     sur une ligne (cf. public/js/ui.js). Reste accessible (aria-expanded / aria-controls). #}
+  <button type="button" class="navbar-toggle" id="navbar-toggle"
+          aria-controls="primary-nav" aria-expanded="false" aria-label="Ouvrir le menu">
+    <span class="navbar-toggle-bars" aria-hidden="true"></span>
+  </button>
+  <nav class="navbar-links" id="primary-nav">
     {% if currentCompany %}
       <a href="/dashboard">Tableau de bord</a>
       <a href="/employees">Employés</a>

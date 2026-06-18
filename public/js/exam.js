@@ -64,9 +64,12 @@
   const examBody = form.querySelector('[data-exam-body]');
 
   let tick = null;
+  let started = false;
   const duration = parseInt(form.dataset.duration, 10);
 
   function startTimer() {
+    // Garde : un seul minuteur a la fois (evite un double compte a rebours).
+    if (tick) return;
     if (Number.isNaN(duration) || duration <= 0 || !timerEl) return;
     let remaining = duration;
 
@@ -93,6 +96,8 @@
   }
 
   function startExam() {
+    if (started) return; // idempotent : un seul demarrage, meme si re-declenche
+    started = true;
     if (startWrap) startWrap.hidden = true;
     if (examBody) examBody.hidden = false;
     show(0);

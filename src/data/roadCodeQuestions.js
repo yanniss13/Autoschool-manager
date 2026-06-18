@@ -621,6 +621,71 @@ const questions = [
   },
 ];
 
+// Illustrations associees aux questions (fichiers dans public/img/road-code).
+// Mapping explicite id -> fichier : les noms de fichiers portent un slug descriptif
+// et un zero initial sur certains themes, on ne peut donc pas les deriver de l'id.
+const questionImages = {
+  'priorites-1': 'priorites-1-priorite-droite.png',
+  'priorites-2': 'priorites-2-stop.png',
+  'priorites-3': 'priorites-3-rond-point-corrige.png',
+  'priorites-4': 'priorites-4-passage-etroit.png',
+  'priorites-5': 'priorites-5-feu-en-panne.png',
+  'priorites-6': 'priorites-6-vehicule-prioritaire.png',
+  'priorites-7': 'priorites-7-route-prioritaire.png',
+  'priorites-8': 'priorites-8-tourner-gauche-ceder-passage.png',
+  'priorites-9': 'priorites-9-passage-pieton-prioritaire.png',
+  'priorites-10': 'priorites-10-cedez-le-passage.png',
+  'signalisation-1': 'signalisation-1-panneau-triangulaire-danger.png',
+  'signalisation-2': 'signalisation-2-panneau-rond-interdiction.png',
+  'signalisation-3': 'signalisation-3-panneau-rond-bleu-obligation.png',
+  'signalisation-4': 'signalisation-4-feu-orange-arret-securite.png',
+  'signalisation-5': 'signalisation-5-ligne-blanche-continue.png',
+  'signalisation-6': 'signalisation-6-panneau-bleu-30-vitesse-minimale.png',
+  'signalisation-7': 'signalisation-7-zigzag-jaune-arret-bus.png',
+  'signalisation-8': 'signalisation-8-panneau-stop-octogonal.png',
+  'signalisation-9': 'signalisation-9-panneau-carre-bleu-indication.png',
+  'signalisation-10': 'signalisation-10-fleche-rabattement-voie-disparait.png',
+  'vitesse-1': 'vitesse-01-agglomeration.png',
+  'vitesse-2': 'vitesse-02-autoroute-temps-sec.png',
+  'vitesse-3': 'vitesse-03-autoroute-pluie.png',
+  'vitesse-4': 'vitesse-04-route-double-sens.png',
+  'vitesse-5': 'vitesse-05-permis-probatoire-autoroute.png',
+  'vitesse-6': 'vitesse-06-zone-30.png',
+  'vitesse-7': 'vitesse-07-zone-de-rencontre.png',
+  'vitesse-8': 'vitesse-08-vitesse-trop-basse.png',
+  'vitesse-9': 'vitesse-09-brouillard-visibilite-reduite.png',
+  'vitesse-10': 'vitesse-10-approche-ecole-enfants.png',
+  'stationnement-1': 'stationnement-01-ligne-jaune-continue.png',
+  'stationnement-2': 'stationnement-02-ligne-jaune-discontinue.png',
+  'stationnement-3': 'stationnement-03-arret-et-stationnement.png',
+  'stationnement-4': 'stationnement-04-passage-pieton.png',
+  'stationnement-5': 'stationnement-05-stationnement-a-droite.png',
+  'stationnement-6': 'stationnement-06-place-handicapee.png',
+  'stationnement-7': 'stationnement-07-bouche-incendie.png',
+  'stationnement-8': 'stationnement-08-quitter-stationnement.png',
+  'stationnement-9': 'stationnement-09-avant-passage-pieton.png',
+  'stationnement-10': 'stationnement-10-stationnement-en-epi.png',
+  'securite-1': 'securite-01-distance-securite.png',
+  'securite-2': 'securite-02-ceinture-securite.png',
+  'securite-3': 'securite-03-alcool-permis-probatoire.png',
+  'securite-4': 'securite-04-telephone-au-volant.png',
+  'securite-5': 'securite-05-angle-mort.png',
+  'securite-6': 'securite-06-distance-freinage.png',
+  'securite-7': 'securite-07-enfant-passager.png',
+  'securite-8': 'securite-08-pause-fatigue.png',
+  'securite-9': 'securite-09-feux-detresse.png',
+  'securite-10': 'securite-10-arret-urgence-autoroute.png',
+};
+
+// On rattache le chemin public de l'illustration a chaque question. Champ optionnel :
+// une question sans entree dans la table reste affichee normalement, sans image.
+questions.forEach((question) => {
+  const file = questionImages[question.id];
+  if (file) {
+    question.image = `/img/road-code/${file}`;
+  }
+});
+
 function findTheme(themeId) {
   return themes.find((theme) => theme.id === themeId) || themes[0];
 }

@@ -32,8 +32,23 @@
         .catch(function () { info.revert(); });
     }
 
+    // En dessous de cette largeur, la vue « semaine » (7 colonnes) devient
+    // illisible : on bascule sur la vue « jour ». On garde un selecteur
+    // Semaine / Jour et on re-bascule automatiquement au redimensionnement.
+    var NARROW = 700;
+    function isNarrow() { return window.innerWidth < NARROW; }
+    var wasNarrow = isNarrow();
+    function pickView() { return isNarrow() ? 'timeGridDay' : 'timeGridWeek'; }
+    function pickToolbar() {
+      // Sur petit ecran on allege la barre (pas de selecteur de vue : la vue
+      // jour est imposee) ; sur large on propose la bascule Semaine / Jour.
+      return isNarrow()
+        ? { left: 'prev,next', center: 'title', right: 'today' }
+        : { left: 'prev,next today', center: 'title', right: 'timeGridWeek,timeGridDay' };
+    }
+
     var calendar = new FullCalendar.Calendar(el, {
-      initialView: 'timeGridWeek',
+      initialView: pickView(),
       locale: 'fr',
       firstDay: 1,
       allDaySlot: false,
@@ -41,7 +56,18 @@
       slotMaxTime: '20:00:00',
       nowIndicator: true,
       height: 'auto',
-      headerToolbar: { left: 'prev,next today', center: 'title', right: '' },
+      expandRows: true,
+      headerToolbar: pickToolbar(),
+      // On ne recale la vue que lorsqu'on FRANCHIT le point de rupture, pour ne
+      // pas ecraser un choix manuel Semaine / Jour lors d'un simple resize.
+      windowResize: function () {
+        var narrowNow = isNarrow();
+        if (narrowNow !== wasNarrow) {
+          wasNarrow = narrowNow;
+          calendar.changeView(pickView());
+          calendar.setOption('headerToolbar', pickToolbar());
+        }
+      },
       events: el.dataset.eventsUrl,
       editable: editable,
       eventStartEditable: editable,

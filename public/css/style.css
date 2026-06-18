@@ -288,6 +288,11 @@ small {
   display: flex;
   align-items: center;
   gap: var(--space-1);
+  /* Les liens ne se compriment pas et ne reviennent pas a la ligne : si la
+     place manque, ils debordent reellement, ce que le JS detecte pour basculer
+     en menu « berger » (cf. public/js/ui.js, updateNav). */
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
 }
 
 .navbar-links a {
@@ -312,6 +317,112 @@ small {
 .navbar-links a[aria-current="page"] {
   color: var(--primary);
   background: var(--primary-soft);
+}
+
+/* --- Menu « berger » -------------------------------------------------------
+   Le bouton est masque par defaut : il n'apparait que lorsque le JS ajoute
+   .nav-collapsed sur .navbar (les liens ne tiennent plus sur une ligne). */
+.navbar-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition);
+}
+
+.navbar-toggle:hover {
+  background: var(--surface-2);
+}
+
+/* Icone : 3 barres dessinees avec ::before / ::after autour de l'element central. */
+.navbar-toggle-bars,
+.navbar-toggle-bars::before,
+.navbar-toggle-bars::after {
+  display: block;
+  width: 20px;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+  transition: transform var(--transition), opacity var(--transition);
+}
+
+.navbar-toggle-bars {
+  position: relative;
+}
+
+.navbar-toggle-bars::before,
+.navbar-toggle-bars::after {
+  content: "";
+  position: absolute;
+  left: 0;
+}
+
+.navbar-toggle-bars::before { top: -6px; }
+.navbar-toggle-bars::after  { top: 6px; }
+
+/* Etat replie : bouton visible. */
+.navbar.nav-collapsed .navbar-toggle {
+  display: inline-flex;
+}
+
+/* Etat replie : la liste de liens devient un panneau deroulant sous la barre. */
+.navbar.nav-collapsed .navbar-links {
+  position: absolute;
+  top: 100%;
+  right: var(--space-4);
+  left: var(--space-4);
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+  padding: var(--space-2);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+  /* Masque par defaut, devoile via .nav-open. */
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px);
+  transition: opacity var(--transition), transform var(--transition),
+              visibility var(--transition);
+  z-index: 50;
+}
+
+.navbar.nav-collapsed .navbar-links a,
+.navbar.nav-collapsed .navbar-links .inline-form,
+.navbar.nav-collapsed .navbar-links .link-button {
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.navbar.nav-collapsed.nav-open .navbar-links {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+/* Icone : barres -> croix quand le menu est ouvert. */
+.navbar.nav-open .navbar-toggle-bars {
+  background: transparent;
+}
+
+.navbar.nav-open .navbar-toggle-bars::before {
+  top: 0;
+  transform: rotate(45deg);
+}
+
+.navbar.nav-open .navbar-toggle-bars::after {
+  top: 0;
+  transform: rotate(-45deg);
 }
 
 /* ===================================================================
@@ -436,6 +547,12 @@ small {
   max-width: 440px;
   margin: var(--space-8) auto;
   box-shadow: var(--shadow-lg);
+}
+
+/* Carte du quiz d'entrainement : plus large que les formulaires classiques
+   pour laisser respirer les questions et l'illustration. */
+.form-card--quiz {
+  max-width: 760px;
 }
 
 .form-card h1 {
@@ -900,14 +1017,16 @@ small {
   --fc-event-border-color: var(--primary);
   --fc-event-text-color: var(--on-primary);
   --fc-list-event-hover-bg-color: var(--surface-2);
-  /* boutons de la barre d'outils -> style primaire de l'app */
-  --fc-button-text-color: var(--on-primary);
-  --fc-button-bg-color: var(--primary);
-  --fc-button-border-color: var(--primary);
-  --fc-button-hover-bg-color: var(--primary-hover);
-  --fc-button-hover-border-color: var(--primary-hover);
-  --fc-button-active-bg-color: var(--primary-active);
-  --fc-button-active-border-color: var(--primary-active);
+  /* boutons de la barre d'outils : style « secondaire » neutre par defaut ;
+     l'accent primaire est reserve au bouton de vue ACTIF (cf. plus bas) pour
+     creer une hierarchie claire (navigation discrete vs vue selectionnee). */
+  --fc-button-text-color: var(--text);
+  --fc-button-bg-color: var(--surface);
+  --fc-button-border-color: var(--border-strong);
+  --fc-button-hover-bg-color: var(--surface-2);
+  --fc-button-hover-border-color: var(--border-strong);
+  --fc-button-active-bg-color: var(--primary);
+  --fc-button-active-border-color: var(--primary);
 
   font-size: 0.9rem;
   color: var(--text);
@@ -935,18 +1054,84 @@ small {
   color: var(--muted);
 }
 
-/* Boutons : rayon + ombre coherents avec l'app */
+/* --- Barre d'outils : boutons coherents avec le design system --------------
+   Par defaut, les boutons (prec./suiv., aujourd'hui) adoptent le style
+   « secondaire » neutre de l'app ; seul le bouton de vue ACTIF (Semaine/Jour)
+   recoit l'accent primaire -> hierarchie visuelle nette. */
 #calendar .fc-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0.4rem 0.85rem;
   border-radius: var(--radius);
   box-shadow: var(--shadow-xs);
   font-weight: 600;
-  text-transform: capitalize;
+  font-size: 0.9rem;
+  text-transform: none; /* libelles deja capitalises par la locale fr */
+  transition: background var(--transition), border-color var(--transition),
+              color var(--transition);
 }
 
 #calendar .fc-button:focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px var(--primary-ring);
 }
+
+/* Boutons « icone seule » (prec./suiv.) un peu plus compacts. */
+#calendar .fc-prev-button,
+#calendar .fc-next-button {
+  padding-inline: 0.55rem;
+}
+
+/* Etat desactive (ex. « Aujourd'hui » deja sur la semaine courante) :
+   discret mais lisible, plutot que delave. */
+#calendar .fc-button:disabled {
+  opacity: 0.5;
+  box-shadow: none;
+}
+
+/* Bouton de vue actif : accent primaire + texte sur primaire. */
+#calendar .fc-button-active,
+#calendar .fc-button-active:hover,
+#calendar .fc-button-active:focus {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--on-primary);
+  box-shadow: none;
+}
+
+/* Groupes (prec./suiv. et Semaine/Jour) : aspect « segmented control »
+   (boutons jointifs, sans double ombre). */
+#calendar .fc-button-group > .fc-button {
+  box-shadow: none;
+}
+
+/* Fleches « prec./suiv. » : FullCalendar les rend via une police embarquee en
+   data: URI, bloquee par la CSP stricte (font-src 'self'). On dessine donc le
+   chevron en CSS (currentColor, aucune police) — net et parfaitement centre. */
+#calendar .fc-icon-chevron-left,
+#calendar .fc-icon-chevron-right {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1em;
+  height: 1em;
+  vertical-align: middle;
+}
+
+#calendar .fc-icon-chevron-left::before,
+#calendar .fc-icon-chevron-right::before {
+  content: "";
+  width: 0.42em;
+  height: 0.42em;
+  border: solid currentColor;
+  border-width: 0 0 2px 2px; /* cotes bas + gauche -> chevron */
+  border-radius: 1px;
+}
+
+#calendar .fc-icon-chevron-left::before  { transform: translateX(1.5px) rotate(45deg); }
+#calendar .fc-icon-chevron-right::before { transform: translateX(-1.5px) rotate(-135deg); }
 
 /* Creneaux : coins arrondis et survol legerement souleve */
 #calendar .fc-event {
@@ -1003,22 +1188,10 @@ small {
     font-size: 14.5px;
   }
 
+  /* La navbar reste sur une ligne ; le passage en menu « berger » est gere par
+     JS (detection du debordement) + .nav-collapsed, independamment du media query. */
   .navbar {
-    height: auto;
-    flex-direction: column;
-    align-items: stretch;
-    gap: var(--space-3);
-    padding: var(--space-3) var(--space-4);
-  }
-
-  .navbar-links {
-    flex-wrap: wrap;
-    gap: var(--space-1);
-  }
-
-  .navbar-links a {
-    flex: 1 1 auto;
-    justify-content: center;
+    padding: 0 var(--space-4);
   }
 
   .container {
@@ -1067,11 +1240,77 @@ small {
   .info-label {
     min-width: 0;
   }
+
+  /* Planning : la barre d'outils et le selecteur d'employe passent pleine largeur. */
+  .planning-toolbar,
+  .agenda-employee-picker {
+    width: 100%;
+  }
+
+  .agenda-employee-picker select {
+    flex: 1 1 auto;
+  }
+
+  /* Calendrier : padding reduit et barre d'outils empilee + centree pour ne
+     pas deborder (la vue passe par ailleurs en « jour » via planning-calendar.js). */
+  #calendar {
+    padding: var(--space-3);
+    font-size: 0.82rem;
+  }
+
+  #calendar .fc-toolbar.fc-header-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+  }
+
+  #calendar .fc-toolbar-chunk {
+    display: flex;
+    justify-content: center;
+  }
+
+  #calendar .fc-toolbar-title {
+    font-size: 1.05rem;
+    text-align: center;
+  }
+
+  /* Quiz : le selecteur de theme et son bouton occupent toute la largeur. */
+  .quiz-theme-form .form-group {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  .quiz-theme-form .btn {
+    width: 100%;
+  }
 }
 
-@media (max-width: 420px) {
+@media (max-width: 480px) {
   .stats-grid {
     grid-template-columns: 1fr;
+  }
+
+  .container {
+    padding: 0 var(--space-3);
+  }
+
+  .form-card {
+    padding: var(--space-5) var(--space-4);
+  }
+
+  /* Cibles tactiles confortables et boutons pleine largeur sur les actions. */
+  .quiz-actions .btn {
+    width: 100%;
+  }
+
+  .exam-timer {
+    font-size: 1.25rem;
+  }
+
+  /* Les bulles de l'assistant s'elargissent pour mieux profiter de l'ecran. */
+  .assistant-bubble {
+    max-width: 100%;
   }
 }
 
@@ -1310,6 +1549,30 @@ small {
   margin-bottom: var(--space-4);
 }
 
+/* Illustration de la question (entrainement, examen, correction).
+   Tokens de surface/bordure -> suit automatiquement le theme clair/sombre. */
+.quiz-question__illustration {
+  display: block;
+  width: 100%;
+  max-width: 640px;
+  max-height: 440px;
+  height: auto;
+  object-fit: contain;
+  margin: 0 auto var(--space-4);
+  padding: var(--space-3);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-xs);
+}
+
+/* Variante compacte dans les cartes « Questions a revoir ». */
+.quiz-question__illustration--review {
+  max-width: 340px;
+  max-height: 230px;
+  margin: var(--space-3) 0 0;
+}
+
 /* Reponses : cartes d'option avec puce personnalisee */
 .choice-row {
   display: flex;
@@ -1471,6 +1734,12 @@ small {
   display: grid;
   place-items: center;
   padding: var(--space-5) 0;
+}
+
+/* L'attribut hidden doit primer sur display:grid : sinon la carte de demarrage
+   reste visible apres le clic -> double clic possible -> double minuteur. */
+.exam-start[hidden] {
+  display: none;
 }
 
 .exam-start__card {
@@ -1697,6 +1966,7 @@ small {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
+  flex-wrap: wrap;
 }
 
 .badge-muted {
@@ -1877,15 +2147,31 @@ small {
 /* ---- Jauges de progression par theme ---- */
 .theme-stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  /* Les 5 themes tiennent sur une seule ligne en large (minmax(0,1fr) evite
+     tout debordement), puis on replie progressivement sur ecrans etroits. */
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: var(--space-4);
+}
+
+@media (max-width: 900px) {
+  .theme-stats-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 600px) {
+  .theme-stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 400px) {
+  .theme-stats-grid { grid-template-columns: 1fr; }
 }
 
 .theme-stat {
   display: flex;
+  flex-direction: column;
   align-items: center;
+  text-align: center;
   gap: var(--space-4);
-  padding: var(--space-4);
+  padding: var(--space-6) var(--space-4);
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -1894,7 +2180,7 @@ small {
 
 /* Anneau de progression dessine en conic-gradient a partir de --rate */
 .theme-stat__gauge {
-  --size: 64px;
+  --size: 96px;
   position: relative;
   flex-shrink: 0;
   width: var(--size);
@@ -1909,8 +2195,8 @@ small {
 .theme-stat__gauge::before {
   content: "";
   position: absolute;
-  width: calc(var(--size) - 14px);
-  height: calc(var(--size) - 14px);
+  width: calc(var(--size) - 18px);
+  height: calc(var(--size) - 18px);
   border-radius: 50%;
   background: var(--surface);
 }
@@ -1918,7 +2204,7 @@ small {
 .theme-stat__gauge-value {
   position: relative;
   font-weight: 800;
-  font-size: 1.05rem;
+  font-size: 1.4rem;
   color: var(--text);
 }
 
@@ -1928,8 +2214,8 @@ small {
 }
 
 .theme-stat__meta h3 {
-  margin: 0 0 0.2rem;
-  font-size: 1rem;
+  margin: 0 0 0.3rem;
+  font-size: 1.1rem;
 }
 
 .theme-stat__meta p { margin: 0; }
