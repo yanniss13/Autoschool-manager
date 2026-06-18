@@ -12,3 +12,6 @@ prisma/dev.db-shm
 
 # Logs
 *.log
+
+# Sorties d'extensions VS Code (non versionnees)
+.vscode/
