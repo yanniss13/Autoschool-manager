@@ -61,9 +61,11 @@ données d'une autre entreprise.
 - [x] Assistant code via Groq avec repli local hors-ligne
 - [x] Envoi optionnel des identifiants élève par email
 - [x] Changement forcé du mot de passe élève à la première connexion
-- [x] Réinitialisation de mot de passe élève par lien email à usage unique
+- [x] Réinitialisation de mot de passe employé et élève par lien email à usage unique (flux commun)
+- [x] Connexion unifiée employé / élève sur `/espace-login` (rôle auto-détecté)
 - [x] Compteurs du dashboard (employés, véhicules, véhicules affectés / disponibles)
 - [x] CSS propre et homogène sur toutes les pages, avec thème clair/sombre
+- [x] Interface responsive : menu « berger » quand la navbar déborde, calendrier en vue jour sur mobile
 
 ## Choix techniques importants
 
@@ -233,7 +235,8 @@ Couverture (125 vérifications) :
 - examen blanc avec tirage réparti sur les thèmes et correction détaillée ;
 - changement forcé du mot de passe élève à la première connexion ;
 - renvoi des identifiants avec mot de passe temporaire ;
-- reset de mot de passe élève avec jeton haché, expiration et usage unique ;
+- reset de mot de passe employé et élève avec jeton haché, expiration et usage unique ;
+- connexion unifiée `/espace-login` (employé + élève) et redirection des anciennes URL ;
 - endpoints JSON FullCalendar (lecture, déplacement et rejet 400 des dates invalides) ;
 - cloisonnement multi-entreprises (accès cross-tenant → 404) ;
 - sécurité & validations (rejet d'un POST sans jeton CSRF, bornes d'âge et d'année) ;
@@ -264,12 +267,12 @@ Couverture (125 vérifications) :
    mot de passe à la première connexion.
 8. **Planning** : aller dans **Planning**, créer un créneau pour un employé et un
    élève, puis le déplacer dans FullCalendar.
-9. **Espace employé** : se connecter sur `/employee-login` avec l'email et le mot
-   de passe de l'employé → vérifier que le créneau et le véhicule affecté
-   s'affichent automatiquement.
-10. **Espace élève** : se connecter sur `/student-login`, changer le mot de passe
-   forcé, vérifier le planning, lancer un entraînement, passer un examen blanc et
-   poser une question à l'assistant code.
+9. **Espace employé** : se connecter sur `/espace-login` avec l'email et le mot
+   de passe de l'employé (le rôle est auto-détecté) → vérifier que le créneau et le
+   véhicule affecté s'affichent automatiquement.
+10. **Espace élève** : se connecter sur `/espace-login` avec l'email de l'élève,
+   changer le mot de passe forcé, vérifier le planning, lancer un entraînement,
+   passer un examen blanc et poser une question à l'assistant code.
 11. **Mot de passe oublié** : montrer le lien `/forgot-password` si le jury
    demande le parcours de reset.
 12. **Dashboard** : revenir au tableau de bord → les compteurs reflètent l'état
@@ -299,7 +302,7 @@ Couverture (125 vérifications) :
 ## Limites actuelles du MVP
 
 - L'espace employé est volontairement en **lecture seule**.
-- Le reset de mot de passe est branché pour les élèves, pas encore pour gérants/employés.
+- Le reset de mot de passe couvre élèves et employés (flux commun), pas encore le gérant.
 - Pas de gestion fine des permissions côté gérant.
 - Pas de lieux de départ/arrivée, examens officiels ou leçons détaillées.
 - L'assistant local reste simple ; Groq apporte les réponses riches quand la clé API est configurée.
