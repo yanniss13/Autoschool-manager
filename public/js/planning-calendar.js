@@ -1,14 +1,38 @@
 // Initialise FullCalendar sur l'element #calendar a partir de ses attributs data-*.
-// Partage par la vue gerant (editable) et l'espace employe (lecture seule).
+// Partage par la vue gerant (editable) et l'espace employe / eleve (lecture seule).
+//
+// FullCalendar (~282 Ko) est CHARGE PARESSEUSEMENT : la lib n'est injectee que
+// lorsque le calendrier approche du viewport (IntersectionObserver). Sur les pages
+// ou le calendrier est sous la ligne de flottaison (espace eleve / employe), cela
+// evite d'executer 282 Ko de JS au chargement initial -> TBT bien plus bas.
 (function () {
   function pad(n) { return (n < 10 ? '0' : '') + n; }
   function fmtDate(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
   function fmtLocal(d) { return fmtDate(d) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes()); }
 
-  document.addEventListener('DOMContentLoaded', function () {
-    var el = document.getElementById('calendar');
-    if (!el || typeof FullCalendar === 'undefined') return;
+  // Injecte un script externe et resout la promesse quand il est charge.
+  function loadScript(src) {
+    return new Promise(function (resolve, reject) {
+      var s = document.createElement('script');
+      s.src = src;
+      s.onload = resolve;
+      s.onerror = function () { reject(new Error('Echec du chargement de ' + src)); };
+      document.head.appendChild(s);
+    });
+  }
 
+  // Charge FullCalendar (lib + locale fr) une seule fois. La locale doit venir
+  // APRES la lib principale car elle s'y enregistre.
+  var fcPromise = null;
+  function ensureFullCalendar() {
+    if (typeof FullCalendar !== 'undefined') return Promise.resolve();
+    if (fcPromise) return fcPromise;
+    fcPromise = loadScript('/vendor/fullcalendar/index.global.min.js')
+      .then(function () { return loadScript('/vendor/fullcalendar/fr.global.min.js'); });
+    return fcPromise;
+  }
+
+  function initCalendar(el) {
     var editable = el.dataset.editable === 'true';
     var csrf = el.dataset.csrf || '';
     var createBase = el.dataset.createBase || '';
@@ -87,5 +111,22 @@
     });
 
     calendar.render();
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    var el = document.getElementById('calendar');
+    if (!el) return;
+
+    function boot() { ensureFullCalendar().then(function () { initCalendar(el); }); }
+
+    // Sans IntersectionObserver (vieux navigateurs), on charge immediatement.
+    if (!('IntersectionObserver' in window)) { boot(); return; }
+
+    // rootMargin : on declenche le chargement un peu AVANT que le calendrier
+    // n'entre a l'ecran, pour qu'il soit pret au moment ou l'utilisateur arrive.
+    var io = new IntersectionObserver(function (entries, obs) {
+      if (entries[0].isIntersecting) { obs.disconnect(); boot(); }
+    }, { rootMargin: '200px' });
+    io.observe(el);
   });
 })();

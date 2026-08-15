@@ -313,9 +313,10 @@ async function runTests() {
     }));
   check('Creneau persiste en base', !!createdSlot, 'creneau introuvable');
 
-  // Page planning : conteneur FullCalendar (les creneaux sont charges via /planning/events).
+  // Page planning : conteneur #calendar + script de cablage. FullCalendar lui-meme
+  // est charge paresseusement par planning-calendar.js (les creneaux viennent de /planning/events).
   r = await a(`/planning?employeeId=${e1.id}`);
-  check('Planning gerant -> 200 avec calendrier FullCalendar', r.status === 200 && /id="calendar"/.test(r.text) && /fullcalendar/i.test(r.text), `status=${r.status}`);
+  check('Planning gerant -> 200 avec calendrier FullCalendar', r.status === 200 && /id="calendar"/.test(r.text) && /planning-calendar\.js/.test(r.text), `status=${r.status}`);
   check('Calendrier pointe vers /planning/events', /data-events-url="\/planning\/events\?employeeId=/.test(r.text), 'events url absente');
 
   // Endpoint JSON consomme par FullCalendar.

@@ -1003,6 +1003,9 @@ small {
    On remappe les variables --fc-* de FullCalendar sur les tokens de l'app :
    le calendrier suit donc automatiquement le theme clair / sombre. */
 #calendar {
+  /* Reserve la hauteur avant que FullCalendar (charge paresseusement) ne rende,
+     pour eviter un decalage de mise en page (CLS) quand il apparait. */
+  min-height: 600px;
   /* surfaces, bordures, textes */
   --fc-border-color: var(--border);
   --fc-page-bg-color: var(--surface);

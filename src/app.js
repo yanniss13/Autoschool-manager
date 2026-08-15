@@ -4,6 +4,7 @@ const path = require('path');
 const express = require('express');
 const session = require('express-session');
 const helmet = require('helmet');
+const compression = require('compression');
 
 const flash = require('./middlewares/flash');
 const csrf = require('./middlewares/csrf');
@@ -37,7 +38,10 @@ app.use(
         // 'unsafe-inline' reste requis pour les styles (FullCalendar + variables CSS inline).
         // Police auto-hebergee -> plus besoin d'autoriser Google Fonts.
         styleSrc: ["'self'", "'unsafe-inline'"],
-        fontSrc: ["'self'"],
+        // 'data:' requis pour la police d'icones embarquee de FullCalendar (chevrons de
+        // navigation) injectee en data: URI ; sans ca le navigateur la bloque (CSP) et
+        // les fleches du calendrier disparaissent.
+        fontSrc: ["'self'", 'data:'],
         imgSrc: ["'self'", 'data:'],
         connectSrc: ["'self'"],
         // En dev (HTTP local), on NE force PAS https sur les sous-ressources, sinon
@@ -57,8 +61,18 @@ app.set('view engine', 'twig');
 app.set('twig options', { autoescape: true });
 
 // --- Middlewares globaux ---
+// Compression gzip/brotli des reponses (HTML, CSS, JS). Gros gain de poids reseau
+// sur les bundles vendor (FullCalendar, ApexCharts) servis en clair sinon.
+app.use(compression());
 app.use(express.urlencoded({ extended: false })); // parse les formulaires HTML
-app.use(express.static(path.join(__dirname, '..', 'public'))); // CSS et assets
+// Assets statiques avec cache navigateur en production. maxAge 0 en dev pour voir
+// les changements immediatement. Pas d'`immutable` : les noms de fichiers ne sont
+// pas versionnes (hash), donc le navigateur doit revalider apres expiration.
+app.use(
+  express.static(path.join(__dirname, '..', 'public'), {
+    maxAge: isProd ? '7d' : 0,
+  })
+); // CSS et assets
 
 // --- Session ---
 app.use(

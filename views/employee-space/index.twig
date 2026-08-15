@@ -34,7 +34,7 @@
 {% endblock %}
 
 {% block scripts %}
-  <script src="/vendor/fullcalendar/index.global.min.js"></script>
-  <script src="/vendor/fullcalendar/fr.global.min.js"></script>
-  <script src="/js/planning-calendar.js"></script>
+  {# FullCalendar est charge paresseusement par planning-calendar.js (a l'approche
+     du calendrier), pour ne pas executer ~282 Ko de JS au chargement initial. #}
+  <script src="/js/planning-calendar.js" defer></script>
 {% endblock %}

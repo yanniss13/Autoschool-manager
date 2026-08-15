@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  {# Meta description (SEO). Valeur par defaut globale ; une vue peut la surcharger
+     en passant la variable `metaDescription` depuis son controleur. #}
+  <meta name="description" content="{{ metaDescription|default('AutoSchool Manager — gestion interne du personnel, des véhicules et du planning pour une auto-école.') }}">
   <meta name="csrf-token" content="{{ csrfToken }}">
   {# Pose le theme (clair/sombre) AVANT le rendu pour eviter tout clignotement. #}
   <script nonce="{{ cspNonce }}">
@@ -15,6 +18,9 @@
     })();
   </script>
   <title>{% if title %}{{ title }} · {% endif %}AutoSchool Manager</title>
+  {# Precharge la graisse 400 (texte courant) pour qu'elle arrive tot : moins de
+     decalage visuel (CLS) du au font-display: swap, et meilleur LCP. #}
+  <link rel="preload" href="/fonts/public-sans-400.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
